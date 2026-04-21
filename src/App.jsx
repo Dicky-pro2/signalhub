@@ -21,6 +21,7 @@ import ProviderSignals from './pages/ProviderSignals';
 import ProviderEarnings from './pages/ProviderEarnings';
 import ProviderReviews from './pages/ProviderReviews';
 import WithdrawFunds from './pages/WithdrawFunds';
+import { NotificationProvider } from './context/NotificationContext';
 
 // Protected route wrapper
 function ProtectedRoute({ children, allowedRoles }) {
@@ -129,7 +130,9 @@ function App() {
     <BrowserRouter>
       <ThemeProvider>
         <AuthProvider>
-          <AppRoutes />
+          <NotificationProvider>
+            <AppRoutes />
+          </NotificationProvider>
         </AuthProvider>
       </ThemeProvider>
     </BrowserRouter>

@@ -657,7 +657,7 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="border-t border-gray-800 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-gray-500 text-sm">
-          <p>© 2024 Signal Hub. All rights reserved. Not financial advice.</p>
+          <p>© 2026 Signal Hub. All rights reserved. Not financial advice.</p>
           <p className="mt-2">Make trading accessible to everyone</p>
         </div>
       </footer>

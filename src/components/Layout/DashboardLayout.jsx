@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { Icons } from '../Icons';
+import Icon from '../Icon';
 
 export default function DashboardLayout() {
   const { user, signOut } = useAuth();
@@ -13,37 +15,37 @@ export default function DashboardLayout() {
   const getNavigation = () => {
     if (user?.role === 'admin') {
       return [
-        { name: 'Dashboard', href: '/admin', icon: '📊' },
-        { name: 'Users', href: '/admin/users', icon: '👥' },
-        { name: 'Providers', href: '/admin/providers', icon: '⭐' },
-        { name: 'Signals', href: '/admin/signals', icon: '📈' },
-        { name: 'Transactions', href: '/admin/transactions', icon: '💰' },
-        { name: 'Reports', href: '/admin/reports', icon: '🚩' },
-        { name: 'Settings', href: '/admin/settings', icon: '⚙️' },
+        { name: 'Dashboard', href: '/admin', icon: Icons.Dashboard },
+        { name: 'Users', href: '/admin/users', icon: Icons.Users },
+        { name: 'Providers', href: '/admin/providers', icon: Icons.Verified },
+        { name: 'Signals', href: '/admin/signals', icon: Icons.Chart },
+        { name: 'Transactions', href: '/admin/transactions', icon: Icons.Payment },
+        { name: 'Reports', href: '/admin/reports', icon: Icons.Reports },
+        { name: 'Settings', href: '/admin/settings', icon: Icons.Settings },
       ];
     } else if (user?.role === 'provider') {
-  return [
-    { name: 'Dashboard', href: '/provider', icon: '📊' },
-    { name: 'My Signals', href: '/provider/signals', icon: '📈' },
-    { name: 'Create Signal', href: '/provider/create-signal', icon: '✏️' },
-    { name: 'Earnings', href: '/provider/earnings', icon: '💰' },
-    { name: 'Withdraw', href: '/provider/withdraw', icon: '💸' },  // Add this line
-    { name: 'Reviews', href: '/provider/reviews', icon: '⭐' },
-    { name: 'Analytics', href: '/provider/analytics', icon: '📉' },
-    { name: 'Notifications', href: '/provider/notifications', icon: '🔔' },
-    { name: 'Settings', href: '/provider/settings', icon: '⚙️' },
-  ];
-} else {
-  return [
-    { name: 'Dashboard', href: '/dashboard', icon: '📊' },
-    { name: 'Marketplace', href: '/marketplace', icon: '🛒' },
-    { name: 'My Purchases', href: '/dashboard/purchases', icon: '📦' },
-    { name: 'Watchlist', href: '/dashboard/watchlist', icon: '👁️' },
-    { name: 'Wallet', href: '/dashboard/wallet', icon: '💰' },
-    { name: 'Notifications', href: '/dashboard/notifications', icon: '🔔' },
-    { name: 'Settings', href: '/dashboard/settings', icon: '⚙️' },
-  ];
-}
+      return [
+        { name: 'Dashboard', href: '/provider', icon: Icons.Dashboard },
+        { name: 'My Signals', href: '/provider/signals', icon: Icons.Chart },
+        { name: 'Create Signal', href: '/provider/create-signal', icon: Icons.Add },
+        { name: 'Earnings', href: '/provider/earnings', icon: Icons.Money },
+        { name: 'Withdraw', href: '/provider/withdraw', icon: Icons.Withdraw },
+        { name: 'Reviews', href: '/provider/reviews', icon: Icons.Reviews },
+        { name: 'Analytics', href: '/provider/analytics', icon: Icons.Analytics },
+        { name: 'Notifications', href: '/provider/notifications', icon: Icons.Notifications },
+        { name: 'Settings', href: '/provider/settings', icon: Icons.Settings },
+      ];
+    } else {
+      return [
+        { name: 'Dashboard', href: '/dashboard', icon: Icons.Dashboard },
+        { name: 'Marketplace', href: '/marketplace', icon: Icons.Search },
+        { name: 'My Purchases', href: '/dashboard/purchases', icon: Icons.History },
+        { name: 'Watchlist', href: '/dashboard/watchlist', icon: Icons.Star },
+        { name: 'Wallet', href: '/dashboard/wallet', icon: Icons.Wallet },
+        { name: 'Notifications', href: '/dashboard/notifications', icon: Icons.Notifications },
+        { name: 'Settings', href: '/dashboard/settings', icon: Icons.Settings },
+      ];
+    }
   };
 
   const navigation = getNavigation();
@@ -72,9 +74,12 @@ export default function DashboardLayout() {
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="p-6 border-b border-gray-700">
-            <Link to="/" className="text-2xl font-bold">
-              <span className={darkMode ? 'text-white' : 'text-gray-800'}>Signal</span>
-              <span className="text-orange-500">Hub</span>
+            <Link to="/" className="text-2xl font-bold flex items-center gap-2">
+              <img src="/signalhub-logo.png" alt="SignalHub Logo" className="w-10 h-10" />
+              <div>
+                <span className={darkMode ? 'text-white' : 'text-gray-800'}>Signal</span>
+                <span className="text-orange-500">Hub</span>
+              </div>
             </Link>
           </div>
 
@@ -84,6 +89,7 @@ export default function DashboardLayout() {
               <Link
                 key={item.name}
                 to={item.href}
+                onClick={() => setSidebarOpen(false)}
                 className={`flex items-center gap-3 px-4 py-2 rounded-lg transition ${
                   location.pathname === item.href
                     ? darkMode
@@ -94,7 +100,7 @@ export default function DashboardLayout() {
                     : 'text-gray-600 hover:bg-orange-50 hover:text-orange-600'
                 }`}
               >
-                <span>{item.icon}</span>
+                <Icon icon={item.icon} size={18} />
                 <span>{item.name}</span>
               </Link>
             ))}
@@ -104,26 +110,27 @@ export default function DashboardLayout() {
           <div className={`p-4 border-t ${darkMode ? 'border-gray-700' : 'border-orange-100'}`}>
             <div className="flex items-center gap-3 mb-3">
               <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-white font-bold">
-                {user?.full_name?.charAt(0) || 'U'}
+                {user?.full_name?.charAt(0) || user?.email?.charAt(0) || 'U'}
               </div>
               <div className="flex-1">
                 <p className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                  {user?.full_name || 'User'}
+                  {user?.full_name || user?.email?.split('@')[0] || 'User'}
                 </p>
-                <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                <p className={`text-xs capitalize ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                   {user?.role || 'customer'}
                 </p>
               </div>
             </div>
             <button
               onClick={handleSignOut}
-              className={`w-full text-left px-4 py-2 rounded-lg text-sm transition ${
+              className={`w-full flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition ${
                 darkMode
                   ? 'text-red-400 hover:bg-red-500/20'
                   : 'text-red-600 hover:bg-red-50'
               }`}
             >
-              🚪 Sign Out
+              <Icon icon={Icons.Logout} size={16} />
+              Sign Out
             </button>
           </div>
         </div>
@@ -138,9 +145,7 @@ export default function DashboardLayout() {
               onClick={() => setSidebarOpen(true)}
               className={`lg:hidden p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-orange-100'}`}
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
+              <Icon icon={Icons.Menu} size={20} />
             </button>
 
             <div className="flex items-center gap-4">
@@ -149,13 +154,17 @@ export default function DashboardLayout() {
                 onClick={toggleDarkMode}
                 className={`p-2 rounded-lg transition ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-orange-100'}`}
               >
-                {darkMode ? '☀️' : '🌙'}
+                {darkMode ? <Icon icon={Icons.Sun} size={18} /> : <Icon icon={Icons.Moon} size={18} />}
               </button>
 
               {/* Notifications */}
-              <button className={`p-2 rounded-lg transition ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-orange-100'}`}>
-                🔔
-              </button>
+              <Link
+                to={user?.role === 'provider' ? '/provider/notifications' : '/dashboard/notifications'}
+                className={`p-2 rounded-lg transition relative ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-orange-100'}`}
+              >
+                <Icon icon={Icons.Notifications} size={18} />
+                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+              </Link>
             </div>
           </div>
         </nav>
