@@ -138,6 +138,7 @@ export default function LandingPage() {
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <Link to="/" className="text-2xl font-bold">
+            <img src="/signalhub-logo.png" alt="Signal Hub Logo" className="w-10 h-10 inline-block mr-2 rounded-l-xl" />
               <span className="text-white">Signal</span>
               <span className="text-orange-500">Hub</span>
             </Link>
