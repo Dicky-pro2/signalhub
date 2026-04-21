@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
+import Icon from "../components/Icon";
+import { Icons } from "../components/Icons";
 
 export default function ProviderDashboard() {
   const { user } = useAuth();
@@ -120,7 +122,7 @@ export default function ProviderDashboard() {
           className={`rounded-xl p-4 ${darkMode ? "bg-gray-800" : "bg-white shadow-lg"}`}
         >
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-2xl">📊</span>
+            <span className="text-2xl"><Icon icon={Icons.Chart} size={24} color="#f97316" /></span>
             <span
               className={`text-xs px-2 py-1 rounded-full bg-orange-500/20 text-orange-500`}
             >
@@ -143,7 +145,7 @@ export default function ProviderDashboard() {
           className={`rounded-xl p-4 ${darkMode ? "bg-gray-800" : "bg-white shadow-lg"}`}
         >
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-2xl">💰</span>
+            <span className="text-2xl"><Icon icon={Icons.Dollar} size={24} color="#10b981" /></span>
             <span
               className={`text-xs px-2 py-1 rounded-full bg-green-500/20 text-green-500`}
             >
@@ -166,7 +168,7 @@ export default function ProviderDashboard() {
           className={`rounded-xl p-4 ${darkMode ? "bg-gray-800" : "bg-white shadow-lg"}`}
         >
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-2xl">⭐</span>
+            <span className="text-2xl"><Icon icon={Icons.Star} size={24} color="#fbbf24" /></span>
             <span
               className={`text-xs px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-500`}
             >
@@ -189,7 +191,7 @@ export default function ProviderDashboard() {
           className={`rounded-xl p-4 ${darkMode ? "bg-gray-800" : "bg-white shadow-lg"}`}
         >
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-2xl">🎯</span>
+            <span className="text-2xl"><Icon icon={Icons.Target} size={24} color="#8b5cf6" /></span>
             <span
               className={`text-xs px-2 py-1 rounded-full bg-purple-500/20 text-purple-500`}
             >
