@@ -1,11 +1,12 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { NotificationProvider } from './context/NotificationContext';
 import DashboardLayout from './components/Layout/DashboardLayout';
 import LandingPage from './pages/LandingPage';
 import SignUpPage from './pages/SignUpPage';
 import SignInPage from './pages/SignInPage';
-import MarketplacePage from './pages/MarketplacePage';
+import MarketplacePage from './pages/MarketPlacePage';  // Note the capital P
 import UserDashboard from './pages/UserDashboard';
 import ProviderDashboard from './pages/ProviderDashboard';
 import CreateSignal from './pages/CreateSignal';
@@ -21,28 +22,22 @@ import ProviderSignals from './pages/ProviderSignals';
 import ProviderEarnings from './pages/ProviderEarnings';
 import ProviderReviews from './pages/ProviderReviews';
 import WithdrawFunds from './pages/WithdrawFunds';
-import { NotificationProvider } from './context/NotificationContext';
 
 // Protected route wrapper
 function ProtectedRoute({ children, allowedRoles }) {
   const { user, loading } = useAuth();
   
-  console.log('ProtectedRoute - User:', user, 'Allowed Roles:', allowedRoles); // Debug log
-  
   if (loading) {
-    return <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-      <div className="text-white text-xl">Loading...</div>
-    </div>;
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-white text-xl">Loading...</div>
+      </div>
+    );
   }
   
-  if (!user) {
-    console.log('No user, redirecting to signin');
-    return <Navigate to="/signin" />;
-  }
+  if (!user) return <Navigate to="/signin" />;
   
   if (allowedRoles && !allowedRoles.includes(user.role)) {
-    console.log(`User role ${user.role} not allowed. Allowed: ${allowedRoles}`);
-    // Redirect to appropriate dashboard based on role
     if (user.role === 'provider') return <Navigate to="/provider" />;
     if (user.role === 'admin') return <Navigate to="/admin" />;
     return <Navigate to="/dashboard" />;
@@ -53,12 +48,9 @@ function ProtectedRoute({ children, allowedRoles }) {
 
 function AppRoutes() {
   const { user } = useAuth();
-  console.log('AppRoutes - Current User:', user); // Debug log
 
-  // Get default route based on role
   const getDefaultRoute = () => {
     if (!user) return '/';
-    console.log('Getting default route for role:', user.role);
     if (user.role === 'admin') return '/admin';
     if (user.role === 'provider') return '/provider';
     return '/dashboard';
@@ -71,7 +63,7 @@ function AppRoutes() {
       <Route path="/signup" element={user ? <Navigate to={getDefaultRoute()} /> : <SignUpPage />} />
       <Route path="/signin" element={user ? <Navigate to={getDefaultRoute()} /> : <SignInPage />} />
       
-      {/* Marketplace route - accessible by all authenticated users */}
+      {/* Marketplace route */}
       <Route path="/marketplace" element={
         <ProtectedRoute allowedRoles={['customer', 'provider', 'admin']}>
           <DashboardLayout />
