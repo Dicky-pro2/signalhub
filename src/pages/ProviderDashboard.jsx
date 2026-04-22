@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import Icon from "../components/Icon";
 import { Icons } from "../components/Icons";
+import PerformanceChart from "./PerformanceChart";
 
 export default function ProviderDashboard() {
   const { user } = useAuth();
@@ -211,62 +212,9 @@ export default function ProviderDashboard() {
         </div>
       </div>
 
-      {/* Performance Chart Area */}
-      <div
-        className={`rounded-xl ${darkMode ? "bg-gray-800" : "bg-white shadow-lg"} p-6`}
-      >
-        <div className="flex justify-between items-center mb-4">
-          <h2
-            className={`text-xl font-bold ${darkMode ? "text-white" : "text-gray-800"}`}
-          >
-            Performance Overview
-          </h2>
-          <div className="flex gap-2">
-            {["daily", "weekly", "monthly"].map((p) => (
-              <button
-                key={p}
-                onClick={() => setPeriod(p)}
-                className={`px-3 py-1 rounded-lg text-sm transition ${
-                  period === p
-                    ? "bg-orange-500 text-white"
-                    : darkMode
-                      ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                }`}
-              >
-                {p.charAt(0).toUpperCase() + p.slice(1)}
-              </button>
-            ))}
-          </div>
-        </div>
+     <PerformanceChart />
 
-        {/* Simple bar chart representation */}
-        <div className="h-64 flex items-end gap-2">
-          {performanceData.earnings.map((value, idx) => (
-            <div key={idx} className="flex-1 flex flex-col items-center gap-2">
-              <div
-                className="w-full bg-orange-500 rounded-t transition-all duration-300 hover:bg-orange-600"
-                style={{ height: `${(value / 100) * 200}px` }}
-              />
-              <span
-                className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}
-              >
-                {performanceData.labels[idx]}
-              </span>
-            </div>
-          ))}
-        </div>
-        <div className="text-center mt-4">
-          <p
-            className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}
-          >
-            Weekly earnings:{" "}
-            <span className="text-orange-500 font-bold">
-              ${stats.thisWeekEarnings.toFixed(2)}
-            </span>
-          </p>
-        </div>
-      </div>
+      
 
       {/* Recent Signals */}
       <div

@@ -132,6 +132,7 @@ import {
   FaStarHalfAlt,
   FaTimes,
   FaTools,
+  FaRegClock,
 } from "react-icons/fa";
 
 // Export each icon individually with clear names
@@ -261,6 +262,7 @@ export const Icons = {
   Notifications: MdNotifications,
   Lock: IoMdLock,
   Key: IoMdKey,
+  Time: FaRegClock,
 };
 
 export default Icons;

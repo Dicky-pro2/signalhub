@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
+import Icon from '../components/Icon';
+import Icons from '../components/Icons';
 
 export default function ProviderSignals() {
   const { darkMode } = useTheme();
@@ -83,7 +85,8 @@ export default function ProviderSignals() {
         <div className={`rounded-xl p-4 ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`}>
           <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Total Revenue</p>
           <p className={`text-2xl font-bold text-orange-500`}>
-            ${totalRevenue.toFixed(2)}
+            <Icon icon={Icons.Dollar} className="inline" color="orange"/>
+            {totalRevenue.toFixed(2)}
           </p>
         </div>
       </div>
@@ -95,7 +98,9 @@ export default function ProviderSignals() {
         </div>
       ) : signals.length === 0 ? (
         <div className={`text-center py-12 rounded-xl ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`}>
-          <div className="text-6xl mb-4">📈</div>
+          <div className="text-6xl mb-4">
+            <Icon icon={Icons.Chart} color={darkMode ? 'gray' : 'orange'} />
+          </div>
           <p className={`text-lg ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
             You haven't created any signals yet
           </p>
