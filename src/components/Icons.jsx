@@ -80,6 +80,7 @@ import {
   MdWarning,
   MdEdit,
   MdCandlestickChart,
+  MdStore,
 } from "react-icons/md";
 
 import {
@@ -133,6 +134,8 @@ import {
   FaTimes,
   FaTools,
   FaRegClock,
+  FaEdit,
+  FaShoppingCart,
 } from "react-icons/fa";
 
 // Export each icon individually with clear names
@@ -263,6 +266,13 @@ export const Icons = {
   Lock: IoMdLock,
   Key: IoMdKey,
   Time: FaRegClock,
+  Edits: FaEdit,
+
+  // Add these to your Icons.jsx exports
+Store: MdStore,  // For marketplace header
+ShoppingCart: FaShoppingCart,  // For buy modal
+Sort: FaSort,  // For sort filter
+Lock: FaLock,  // For preview badge
 };
 
 export default Icons;

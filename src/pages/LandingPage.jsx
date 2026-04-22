@@ -2,6 +2,8 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
+import Icon from '../components/Icon';
+import { Icons } from '../components/Icons';
 
 export default function LandingPage() {
   const { user } = useAuth();
@@ -137,39 +139,44 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
-            <Link to="/" className="text-2xl font-bold">
-            <img src="/signalhub-logo.png" alt="Signal Hub Logo" className="w-10 h-10 inline-block mr-2 rounded-l-xl" />
+            <Link to="/" className="text-2xl font-bold flex items-center gap-2">
+              <img src="/signalhub-logo.png" alt="Signal Hub Logo" className="w-10 h-10 border rounded-full" />
               <span className="text-white">Signal</span>
               <span className="text-orange-500">Hub</span>
             </Link>
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-6">
-              <Link to="/marketplace" className="text-gray-300 hover:text-white transition">
+              <Link to="/marketplace" className="flex items-center gap-1 text-gray-300 hover:text-white transition">
+                <Icon icon={Icons.Search} size={16} />
                 Marketplace
               </Link>
               
               {user ? (
                 <>
-                  <Link to={getDashboardLink()} className="text-gray-300 hover:text-white transition">
+                  <Link to={getDashboardLink()} className="flex items-center gap-1 text-gray-300 hover:text-white transition">
+                    <Icon icon={Icons.Dashboard} size={16} />
                     {getDashboardButtonText()}
                   </Link>
                   <Link
                     to="/marketplace"
-                    className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition"
+                    className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition flex items-center gap-1"
                   >
+                    <Icon icon={Icons.TrendingUp} size={16} color="white" />
                     Start Trading
                   </Link>
                 </>
               ) : (
                 <>
-                  <Link to="/signin" className="text-gray-300 hover:text-white transition">
+                  <Link to="/signin" className="flex items-center gap-1 text-gray-300 hover:text-white transition">
+                    <Icon icon={Icons.User} size={16} />
                     Sign In
                   </Link>
                   <Link
                     to="/signup"
-                    className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition"
+                    className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition flex items-center gap-1"
                   >
+                    <Icon icon={Icons.UserPlus} size={16} color="white" />
                     Sign Up
                   </Link>
                 </>
@@ -182,9 +189,7 @@ export default function LandingPage() {
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 className="p-2 rounded-lg hover:bg-gray-800 transition"
               >
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
+                <Icon icon={Icons.Menu} size={20} color="white" />
               </button>
             </div>
           </div>
@@ -196,8 +201,9 @@ export default function LandingPage() {
                 <Link
                   to="/marketplace"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="px-3 py-2 rounded-lg hover:bg-gray-800 text-gray-300"
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-800 text-gray-300"
                 >
+                  <Icon icon={Icons.Search} size={16} />
                   Marketplace
                 </Link>
                 
@@ -206,15 +212,17 @@ export default function LandingPage() {
                     <Link
                       to={getDashboardLink()}
                       onClick={() => setMobileMenuOpen(false)}
-                      className="px-3 py-2 rounded-lg hover:bg-gray-800 text-gray-300"
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-800 text-gray-300"
                     >
+                      <Icon icon={Icons.Dashboard} size={16} />
                       {getDashboardButtonText()}
                     </Link>
                     <Link
                       to="/marketplace"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="px-3 py-2 rounded-lg bg-orange-500 text-white text-center"
+                      className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-orange-500 text-white text-center"
                     >
+                      <Icon icon={Icons.TrendingUp} size={16} color="white" />
                       Start Trading
                     </Link>
                   </>
@@ -223,15 +231,17 @@ export default function LandingPage() {
                     <Link
                       to="/signin"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="px-3 py-2 rounded-lg hover:bg-gray-800 text-gray-300"
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-800 text-gray-300"
                     >
+                      <Icon icon={Icons.User} size={16} />
                       Sign In
                     </Link>
                     <Link
                       to="/signup"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="px-3 py-2 rounded-lg bg-orange-500 text-white text-center"
+                      className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-orange-500 text-white text-center"
                     >
+                      <Icon icon={Icons.UserPlus} size={16} color="white" />
                       Sign Up
                     </Link>
                   </>
@@ -276,14 +286,16 @@ export default function LandingPage() {
               <>
                 <Link
                   to="/signup"
-                  className="inline-block bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-semibold px-8 py-3 rounded-lg transition shadow-lg shadow-orange-500/25"
+                  className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-semibold px-8 py-3 rounded-lg transition shadow-lg shadow-orange-500/25"
                 >
-                  Start Trading Now →
+                  <Icon icon={Icons.UserPlus} size={18} color="white" />
+                  Start Trading Now
                 </Link>
                 <Link
                   to="/signin"
-                  className="inline-block border border-gray-700 hover:border-orange-500 text-gray-300 hover:text-white font-semibold px-8 py-3 rounded-lg transition"
+                  className="inline-flex items-center gap-2 border border-gray-700 hover:border-orange-500 text-gray-300 hover:text-white font-semibold px-8 py-3 rounded-lg transition"
                 >
+                  <Icon icon={Icons.User} size={18} />
                   Sign In
                 </Link>
               </>
@@ -291,14 +303,16 @@ export default function LandingPage() {
               <>
                 <Link
                   to="/marketplace"
-                  className="inline-block bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-semibold px-8 py-3 rounded-lg transition shadow-lg shadow-orange-500/25"
+                  className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-semibold px-8 py-3 rounded-lg transition shadow-lg shadow-orange-500/25"
                 >
-                  Go to Marketplace →
+                  <Icon icon={Icons.TrendingUp} size={18} color="white" />
+                  Go to Marketplace
                 </Link>
                 <Link
                   to={getDashboardLink()}
-                  className="inline-block border border-gray-700 hover:border-orange-500 text-gray-300 hover:text-white font-semibold px-8 py-3 rounded-lg transition"
+                  className="inline-flex items-center gap-2 border border-gray-700 hover:border-orange-500 text-gray-300 hover:text-white font-semibold px-8 py-3 rounded-lg transition"
                 >
+                  <Icon icon={Icons.Dashboard} size={18} />
                   {getDashboardButtonText()}
                 </Link>
               </>
@@ -335,7 +349,6 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* Rest of your content remains the same */}
       {/* Market Data Table Section */}
       <motion.div
         initial="hidden"
@@ -359,13 +372,20 @@ export default function LandingPage() {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-6 py-2 rounded-lg font-semibold transition capitalize ${
+              className={`flex items-center gap-2 px-6 py-2 rounded-lg font-semibold transition capitalize ${
                 activeTab === tab
                   ? 'bg-orange-600 text-white shadow-lg shadow-orange-500/25'
                   : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'
               }`}
             >
-              {tab === 'forex' ? '💱 Forex' : tab === 'crypto' ? '₿ Crypto' : '📈 Stocks'}
+              {tab === 'forex' ? (
+                <Icon icon={Icons.ExchangeAlt} size={16} />
+              ) : tab === 'crypto' ? (
+                <Icon icon={Icons.Bitcoin} size={16} />
+              ) : (
+                <Icon icon={Icons.ChartBar} size={16} />
+              )}
+              {tab === 'forex' ? 'Forex' : tab === 'crypto' ? 'Crypto' : 'Stocks'}
             </button>
           ))}
         </div>
@@ -398,7 +418,9 @@ export default function LandingPage() {
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-gray-300">{signal.provider}</span>
-                      <div className="text-xs text-yellow-500">★ {signal.winRate} win rate</div>
+                      <div className="text-xs text-yellow-500 flex items-center gap-1">
+                        <Icon icon={Icons.Star} size={10} /> {signal.winRate} win rate
+                      </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
@@ -417,8 +439,9 @@ export default function LandingPage() {
                     <td className="px-6 py-4">
                       <Link
                         to={user ? "/marketplace" : "/signup"}
-                        className="text-sm bg-orange-600/20 hover:bg-orange-600 text-orange-400 hover:text-white px-4 py-1 rounded transition inline-block"
+                        className="inline-flex items-center gap-1 text-sm bg-orange-600/20 hover:bg-orange-600 text-orange-400 hover:text-white px-4 py-1 rounded transition"
                       >
+                        <Icon icon={Icons.Dollar} size={12} />
                         Buy
                       </Link>
                      </td>
@@ -453,9 +476,9 @@ export default function LandingPage() {
         
         <div className="grid md:grid-cols-3 gap-8">
           {[
-            { icon: '💰', title: 'Pay Per Signal', desc: 'Only pay for what you use. Signals starting as low as $2.99. No subscriptions, no hidden fees.' },
-            { icon: '⭐', title: 'Verified Experts', desc: 'Every provider is vetted and ranked by real performance. No fake gurus, just proven traders.' },
-            { icon: '📊', title: '3 Markets, 1 Platform', desc: 'Forex, Crypto & Stocks. All in one place. All verified by real traders with trackable results.' },
+            { icon: Icons.Dollar, title: 'Pay Per Signal', desc: 'Only pay for what you use. Signals starting as low as $2.99. No subscriptions, no hidden fees.', color: '#f97316' },
+            { icon: Icons.Star, title: 'Verified Experts', desc: 'Every provider is vetted and ranked by real performance. No fake gurus, just proven traders.', color: '#eab308' },
+            { icon: Icons.Chart, title: '3 Markets, 1 Platform', desc: 'Forex, Crypto & Stocks. All in one place. All verified by real traders with trackable results.', color: '#3b82f6' },
           ].map((feature, idx) => (
             <motion.div
               key={idx}
@@ -463,7 +486,7 @@ export default function LandingPage() {
               className="bg-gray-900/50 backdrop-blur border border-gray-800 rounded-xl p-6 hover:border-orange-500/50 transition-all duration-300"
             >
               <div className="w-12 h-12 bg-orange-500/20 rounded-lg flex items-center justify-center mb-4">
-                <span className="text-2xl">{feature.icon}</span>
+                <Icon icon={feature.icon} size={24} color={feature.color} />
               </div>
               <h3 className="text-xl font-semibold text-white mb-2">{feature.title}</h3>
               <p className="text-gray-400">{feature.desc}</p>
@@ -486,16 +509,15 @@ export default function LandingPage() {
           
           <div className="grid md:grid-cols-4 gap-6">
             {[
-              { step: '1', title: 'Create Account', desc: 'Sign up for free in under 30 seconds', icon: '📝' },
-              { step: '2', title: 'Add Funds', desc: 'Deposit as little as $10 to your wallet', icon: '💰' },
-              { step: '3', title: 'Browse Signals', desc: 'Find signals from top-rated providers', icon: '🔍' },
-              { step: '4', title: 'Buy & Trade', desc: 'Purchase signal and execute the trade', icon: '📈' },
+              { step: '1', title: 'Create Account', desc: 'Sign up for free in under 30 seconds', icon: Icons.UserPlus },
+              { step: '2', title: 'Add Funds', desc: 'Deposit as little as $10 to your wallet', icon: Icons.Wallet },
+              { step: '3', title: 'Browse Signals', desc: 'Find signals from top-rated providers', icon: Icons.Search },
+              { step: '4', title: 'Buy & Trade', desc: 'Purchase signal and execute the trade', icon: Icons.TrendingUp },
             ].map((step, idx) => (
               <div key={idx} className="text-center">
-                <div className="w-16 h-16 bg-gradient-to-r from-orange-600 to-red-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold text-white shadow-lg shadow-orange-500/25">
-                  {step.step}
+                <div className="w-16 h-16 bg-gradient-to-r from-orange-600 to-red-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-orange-500/25">
+                  <Icon icon={step.icon} size={28} color="white" />
                 </div>
-                <div className="text-3xl mb-2">{step.icon}</div>
                 <h3 className="text-white font-semibold mb-2">{step.title}</h3>
                 <p className="text-gray-400 text-sm">{step.desc}</p>
               </div>
@@ -513,8 +535,9 @@ export default function LandingPage() {
         className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20"
       >
         <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-            🏆 Top Rated Providers
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 flex items-center justify-center gap-2">
+            <Icon icon={Icons.Trophy} size={32} color="#eab308" />
+            Top Rated Providers
           </h2>
           <p className="text-gray-400 text-lg">
             Join thousands of traders who trust our experts
@@ -531,15 +554,23 @@ export default function LandingPage() {
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-2xl">
-                      {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : '📊'}
-                    </span>
+                    {idx === 0 ? (
+                      <Icon icon={Icons.Crown} size={24} color="#eab308" />
+                    ) : idx === 1 ? (
+                      <Icon icon={Icons.Medal} size={24} color="#9ca3af" />
+                    ) : idx === 2 ? (
+                      <Icon icon={Icons.Medal} size={24} color="#cd7f32" />
+                    ) : (
+                      <Icon icon={Icons.Chart} size={20} color="#f97316" />
+                    )}
                     <h3 className="text-white font-bold text-lg">{provider.name}</h3>
                   </div>
                   <span className="text-xs px-2 py-1 bg-gray-800 rounded text-gray-400">{provider.market}</span>
                 </div>
                 <div className="text-right">
-                  <div className="text-yellow-400 text-lg">★ {provider.rating}</div>
+                  <div className="flex items-center gap-1 text-yellow-400 text-lg">
+                    <Icon icon={Icons.Star} size={16} /> {provider.rating}
+                  </div>
                   <div className="text-green-400 text-sm">{provider.winRate} win rate</div>
                 </div>
               </div>
@@ -602,7 +633,7 @@ export default function LandingPage() {
                 </div>
                 <div className="flex mb-3">
                   {[...Array(testimonial.rating)].map((_, i) => (
-                    <span key={i} className="text-yellow-400">★</span>
+                    <Icon key={i} icon={Icons.Star} size={16} color="#eab308" />
                   ))}
                 </div>
                 <p className="text-gray-300 italic">"{testimonial.text}"</p>
@@ -636,15 +667,17 @@ export default function LandingPage() {
           {!user ? (
             <Link
               to="/signup"
-              className="inline-block bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-semibold px-8 py-3 rounded-lg transition shadow-lg shadow-orange-500/25"
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-semibold px-8 py-3 rounded-lg transition shadow-lg shadow-orange-500/25"
             >
+              <Icon icon={Icons.UserPlus} size={18} color="white" />
               Create Free Account →
             </Link>
           ) : (
             <Link
               to="/marketplace"
-              className="inline-block bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-semibold px-8 py-3 rounded-lg transition shadow-lg shadow-orange-500/25"
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-semibold px-8 py-3 rounded-lg transition shadow-lg shadow-orange-500/25"
             >
+              <Icon icon={Icons.TrendingUp} size={18} color="white" />
               Browse Marketplace →
             </Link>
           )}
