@@ -1,0 +1,192 @@
+// src/pages/admin/AdminUsers.jsx
+import { useState } from 'react';
+import { useTheme } from '../../context/ThemeContext';
+import Icon from '../../components/Icon';
+import { Icons } from '../../components/Icons';
+
+export default function AdminUsers() {
+  const { darkMode } = useTheme();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterRole, setFilterRole] = useState('all');
+
+  const [users, setUsers] = useState([
+    { id: 1, name: 'John Doe', email: 'john@example.com', role: 'customer', status: 'active', joined: '2024-01-15', spent: 47.50, purchases: 12 },
+    { id: 2, name: 'Jane Smith', email: 'jane@example.com', role: 'provider', status: 'active', joined: '2024-01-14', earned: 1247.89, signals: 28 },
+    { id: 3, name: 'Bob Johnson', email: 'bob@example.com', role: 'customer', status: 'suspended', joined: '2024-01-13', spent: 12.99, purchases: 3 },
+    { id: 4, name: 'Alice Brown', email: 'alice@example.com', role: 'provider', status: 'pending', joined: '2024-01-12', earned: 0, signals: 0 },
+    { id: 5, name: 'Marcus T.', email: 'marcus@example.com', role: 'customer', status: 'active', joined: '2024-01-11', spent: 89.50, purchases: 24 },
+    { id: 6, name: 'CryptoKing', email: 'crypto@example.com', role: 'provider', status: 'active', joined: '2024-01-10', earned: 3420.00, signals: 156 },
+  ]);
+
+  const stats = {
+    total: users.length,
+    active: users.filter(u => u.status === 'active').length,
+    suspended: users.filter(u => u.status === 'suspended').length,
+    pending: users.filter(u => u.status === 'pending').length,
+    customers: users.filter(u => u.role === 'customer').length,
+    providers: users.filter(u => u.role === 'provider').length,
+  };
+
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          user.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesRole = filterRole === 'all' || user.role === filterRole;
+    return matchesSearch && matchesRole;
+  });
+
+  const toggleUserStatus = (id) => {
+    setUsers(users.map(user => 
+      user.id === id 
+        ? { ...user, status: user.status === 'active' ? 'suspended' : 'active' }
+        : user
+    ));
+  };
+
+  const deleteUser = (id) => {
+    if (window.confirm('Are you sure you want to delete this user?')) {
+      setUsers(users.filter(user => user.id !== id));
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+        <div>
+          <h1 className={`text-xl font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+            Users
+          </h1>
+          <p className={`text-sm mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+            Manage all platform users
+          </p>
+        </div>
+        <button className={`px-3 py-1.5 text-sm border rounded-md ${darkMode ? 'border-gray-600 text-white hover:bg-gray-700 text-gray-900' : 'border-gray-300 hover:bg-gray-50'}`}>
+          Export CSV
+        </button>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className={`border rounded-md p-3 ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+          <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Total</p>
+          <p className={`text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{stats.total}</p>
+        </div>
+        <div className={`border rounded-md p-3 ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+          <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Active</p>
+          <p className={`text-xl font-semibold text-green-500`}>{stats.active}</p>
+        </div>
+        <div className={`border rounded-md p-3 ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+          <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Suspended</p>
+          <p className={`text-xl font-semibold text-red-500`}>{stats.suspended}</p>
+        </div>
+        <div className={`border rounded-md p-3 ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+          <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Pending</p>
+          <p className={`text-xl font-semibold text-yellow-500`}>{stats.pending}</p>
+        </div>
+        <div className={`border rounded-md p-3 ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+          <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Customers</p>
+          <p className={`text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{stats.customers}</p>
+        </div>
+        <div className={`border rounded-md p-3 ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+          <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Providers</p>
+          <p className={`text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{stats.providers}</p>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex-1 relative">
+          <Icon icon={Icons.Search} size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search by name or email..."
+            className={`w-full pl-9 pr-3 py-1.5 text-sm border rounded-md focus:outline-none focus:border-orange-500 ${
+              darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-300 text-gray-900'
+            }`}
+          />
+        </div>
+        <select
+          value={filterRole}
+          onChange={(e) => setFilterRole(e.target.value)}
+          className={`px-3 py-1.5 text-sm border rounded-md focus:outline-none focus:border-orange-500 ${
+            darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-300 text-gray-900'
+          }`}
+        >
+          <option value="all">All roles</option>
+          <option value="customer">Customers</option>
+          <option value="provider">Providers</option>
+        </select>
+      </div>
+
+      {/* Users Table */}
+      <div className={`border rounded-md overflow-hidden ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className={darkMode ? 'bg-gray-800' : 'bg-gray-50'}>
+              <tr className={`border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                <th className="text-left px-4 py-3 font-medium">User</th>
+                <th className="text-left px-4 py-3 font-medium">Role</th>
+                <th className="text-left px-4 py-3 font-medium">Status</th>
+                <th className="text-left px-4 py-3 font-medium">Joined</th>
+                <th className="text-left px-4 py-3 font-medium">Activity</th>
+                <th className="text-left px-4 py-3 font-medium"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredUsers.map((user) => (
+                <tr key={user.id} className={`border-b ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+                  <td className="px-4 py-3">
+                    <div>
+                      <p className={darkMode ? 'text-white' : 'text-gray-900'}>{user.name}</p>
+                      <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>{user.email}</p>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                      user.role === 'provider' 
+                        ? 'bg-orange-500/10 text-orange-500' 
+                        : 'bg-blue-500/10 text-blue-500'
+                    }`}>
+                      {user.role}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                      user.status === 'active' ? 'bg-green-500/10 text-green-500' :
+                      user.status === 'suspended' ? 'bg-red-500/10 text-red-500' :
+                      'bg-yellow-500/10 text-yellow-500'
+                    }`}>
+                      {user.status}
+                    </span>
+                  </td>
+                  <td className={`px-4 py-3 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{user.joined}</td>
+                  <td className={`px-4 py-3 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    {user.role === 'provider' ? `${user.signals} signals` : `${user.purchases} purchases`}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => toggleUserStatus(user.id)}
+                        className={`text-xs ${user.status === 'active' ? 'text-red-500' : 'text-green-500'} hover:underline`}
+                      >
+                        {user.status === 'active' ? 'Suspend' : 'Activate'}
+                      </button>
+                      <button
+                        onClick={() => deleteUser(user.id)}
+                        className="text-red-500 text-xs hover:underline"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
