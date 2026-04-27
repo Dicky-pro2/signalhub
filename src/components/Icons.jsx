@@ -81,6 +81,7 @@ import {
   MdEdit,
   MdCandlestickChart,
   MdStore,
+  MdCompare,
 } from "react-icons/md";
 
 import {
@@ -93,6 +94,7 @@ import {
   GiChart,
   GiTargeted,
   GiTrophy,
+  GiFire,
 } from "react-icons/gi";
 
 import {
@@ -136,6 +138,12 @@ import {
   FaRegClock,
   FaEdit,
   FaShoppingCart,
+  FaFile,
+  FaFilePdf,
+  FaCode,
+  FaBookmark,
+  FaUndo,
+  FaCamera,
 } from "react-icons/fa";
 
 // Export each icon individually with clear names
@@ -273,6 +281,17 @@ Store: MdStore,  // For marketplace header
 ShoppingCart: FaShoppingCart,  // For buy modal
 Sort: FaSort,  // For sort filter
 Lock: FaLock,  // For preview badge
+
+// Add these to your Icons.jsx
+Fire: GiFire,
+Compare: MdCompare,
+Camera: FaCamera,
+File: FaFile,
+FilePdf: FaFilePdf,
+Code: FaCode,
+Bookmark: FaBookmark,
+Sliders: FaSlidersH,
+Reset: FaUndo,
 };
 
 export default Icons;

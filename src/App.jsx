@@ -22,6 +22,7 @@ import ProviderSignals from './pages/ProviderSignals';
 import ProviderEarnings from './pages/ProviderEarnings';
 import ProviderReviews from './pages/ProviderReviews';
 import WithdrawFunds from './pages/WithdrawFunds';
+import { ColorProvider } from './context/ColorContext';
 
 // Protected route wrapper
 function ProtectedRoute({ children, allowedRoles }) {
@@ -121,11 +122,13 @@ function App() {
   return (
     <BrowserRouter>
       <ThemeProvider>
-        <AuthProvider>
-          <NotificationProvider>
-            <AppRoutes />
-          </NotificationProvider>
-        </AuthProvider>
+        <ColorProvider>
+          <AuthProvider>
+            <NotificationProvider>
+              <AppRoutes />
+            </NotificationProvider>
+          </AuthProvider>
+        </ColorProvider>
       </ThemeProvider>
     </BrowserRouter>
   );
