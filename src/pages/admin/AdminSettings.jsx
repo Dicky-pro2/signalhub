@@ -29,7 +29,7 @@ export default function AdminSettings() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className={`text-xl font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+        <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
           Settings
         </h1>
         <p className={`text-sm mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
@@ -38,22 +38,25 @@ export default function AdminSettings() {
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
-        {/* Fee Settings */}
-        <div className={`border rounded-md p-4 ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-          <h2 className={`text-sm font-medium mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-            Fee Configuration
-          </h2>
+        {/* Fee Settings Card */}
+        <div className={`rounded-xl p-6 ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`}>
+          <div className="flex items-center gap-2 mb-4">
+            <Icon icon={Icons.Dollar} size={20} className="text-orange-500" />
+            <h2 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+              Fee Configuration
+            </h2>
+          </div>
           <div className="space-y-4">
             <div>
-              <label className={`block text-xs mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              <label className={`block text-sm mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                 Platform Fee (%)
               </label>
               <input
                 type="number"
                 value={settings.platformFee}
                 onChange={(e) => handleChange('platformFee', parseInt(e.target.value))}
-                className={`w-full px-3 py-1.5 text-sm border rounded-md focus:outline-none focus:border-orange-500 ${
-                  darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-300 text-gray-900'
+                className={`w-full px-4 py-2 rounded-lg border focus:outline-none focus:border-orange-500 ${
+                  darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
                 }`}
               />
               <p className={`text-xs mt-1 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
@@ -61,98 +64,104 @@ export default function AdminSettings() {
               </p>
             </div>
             <div>
-              <label className={`block text-xs mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              <label className={`block text-sm mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                 Minimum Withdrawal ($)
               </label>
               <input
                 type="number"
                 value={settings.minWithdrawal}
                 onChange={(e) => handleChange('minWithdrawal', parseInt(e.target.value))}
-                className={`w-full px-3 py-1.5 text-sm border rounded-md focus:outline-none focus:border-orange-500 ${
-                  darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-300 text-gray-900'
+                className={`w-full px-4 py-2 rounded-lg border focus:outline-none focus:border-orange-500 ${
+                  darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
                 }`}
               />
             </div>
             <div>
-              <label className={`block text-xs mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              <label className={`block text-sm mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                 Maximum Withdrawal ($)
               </label>
               <input
                 type="number"
                 value={settings.maxWithdrawal}
                 onChange={(e) => handleChange('maxWithdrawal', parseInt(e.target.value))}
-                className={`w-full px-3 py-1.5 text-sm border rounded-md focus:outline-none focus:border-orange-500 ${
-                  darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-300 text-gray-900'
+                className={`w-full px-4 py-2 rounded-lg border focus:outline-none focus:border-orange-500 ${
+                  darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
                 }`}
               />
             </div>
           </div>
         </div>
 
-        {/* General Settings */}
-        <div className={`border rounded-md p-4 ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-          <h2 className={`text-sm font-medium mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-            General Settings
-          </h2>
+        {/* General Settings Card */}
+        <div className={`rounded-xl p-6 ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`}>
+          <div className="flex items-center gap-2 mb-4">
+            <Icon icon={Icons.Settings} size={20} className="text-orange-500" />
+            <h2 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+              General Settings
+            </h2>
+          </div>
           <div className="space-y-4">
             <div>
-              <label className={`block text-xs mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              <label className={`block text-sm mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                 Referral Bonus (%)
               </label>
               <input
                 type="number"
                 value={settings.referralBonus}
                 onChange={(e) => handleChange('referralBonus', parseInt(e.target.value))}
-                className={`w-full px-3 py-1.5 text-sm border rounded-md focus:outline-none focus:border-orange-500 ${
-                  darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-300 text-gray-900'
+                className={`w-full px-4 py-2 rounded-lg border focus:outline-none focus:border-orange-500 ${
+                  darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
                 }`}
               />
             </div>
-            <div className="flex items-center justify-between">
+            
+            <div className="flex items-center justify-between py-2">
               <div>
-                <p className={`text-sm ${darkMode ? 'text-white' : 'text-gray-900'}`}>Maintenance Mode</p>
+                <p className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>Maintenance Mode</p>
                 <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>Block all user access</p>
               </div>
               <button
                 onClick={() => handleChange('maintenanceMode', !settings.maintenanceMode)}
-                className={`w-10 h-5 rounded-full transition ${
+                className={`w-11 h-6 rounded-full transition ${
                   settings.maintenanceMode ? 'bg-orange-500' : 'bg-gray-600'
                 }`}
               >
                 <div className={`w-4 h-4 rounded-full bg-white transform transition ${
-                  settings.maintenanceMode ? 'translate-x-5' : 'translate-x-0.5'
+                  settings.maintenanceMode ? 'translate-x-6' : 'translate-x-1'
                 }`} />
               </button>
             </div>
-            <div className="flex items-center justify-between">
+
+            <div className="flex items-center justify-between py-2">
               <div>
-                <p className={`text-sm ${darkMode ? 'text-white' : 'text-gray-900'}`}>Email Notifications</p>
+                <p className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>Email Notifications</p>
                 <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>Send system emails</p>
               </div>
               <button
                 onClick={() => handleChange('emailNotifications', !settings.emailNotifications)}
-                className={`w-10 h-5 rounded-full transition ${
+                className={`w-11 h-6 rounded-full transition ${
                   settings.emailNotifications ? 'bg-orange-500' : 'bg-gray-600'
                 }`}
               >
                 <div className={`w-4 h-4 rounded-full bg-white transform transition ${
-                  settings.emailNotifications ? 'translate-x-5' : 'translate-x-0.5'
+                  settings.emailNotifications ? 'translate-x-6' : 'translate-x-1'
                 }`} />
               </button>
             </div>
-            <div className="flex items-center justify-between">
+
+            <div className="flex items-center justify-between py-2">
               <div>
-                <p className={`text-sm ${darkMode ? 'text-white' : 'text-gray-900'}`}>Auto-approve Providers</p>
+                <p className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>Auto-approve Providers</p>
                 <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>Skip manual review</p>
               </div>
               <button
                 onClick={() => handleChange('autoApproveProviders', !settings.autoApproveProviders)}
-                className={`w-10 h-5 rounded-full transition ${
+                className={`w-11 h-6 rounded-full transition ${
                   settings.autoApproveProviders ? 'bg-orange-500' : 'bg-gray-600'
                 }`}
               >
                 <div className={`w-4 h-4 rounded-full bg-white transform transition ${
-                  settings.autoApproveProviders ? 'translate-x-5' : 'translate-x-0.5'
+                  settings.autoApproveProviders ? 'translate-x-6' : 'translate-x-1'
                 }`} />
               </button>
             </div>
@@ -161,10 +170,10 @@ export default function AdminSettings() {
       </div>
 
       {/* Save Button */}
-      <div className="flex justify-end pt-4">
+      <div className="flex justify-end">
         <button
           onClick={saveSettings}
-          className="px-4 py-2 bg-orange-500 text-white text-sm rounded-md hover:bg-orange-600 transition"
+          className="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg transition"
         >
           Save Changes
         </button>

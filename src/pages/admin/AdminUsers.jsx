@@ -1,5 +1,6 @@
 // src/pages/admin/AdminUsers.jsx
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
 import Icon from '../../components/Icon';
 import { Icons } from '../../components/Icons';
@@ -42,67 +43,75 @@ export default function AdminUsers() {
     ));
   };
 
-  const deleteUser = (id) => {
-    if (window.confirm('Are you sure you want to delete this user?')) {
-      setUsers(users.filter(user => user.id !== id));
-    }
-  };
-
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-        <div>
-          <h1 className={`text-xl font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-            Users
-          </h1>
-          <p className={`text-sm mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-            Manage all platform users
-          </p>
-        </div>
-        <button className={`px-3 py-1.5 text-sm border rounded-md ${darkMode ? 'border-gray-600 text-white hover:bg-gray-700 text-gray-900' : 'border-gray-300 hover:bg-gray-50'}`}>
-          Export CSV
-        </button>
+      <div>
+        <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+          Users
+        </h1>
+        <p className={`text-sm mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+          Manage all platform users
+        </p>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <div className={`border rounded-md p-3 ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-          <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Total</p>
-          <p className={`text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{stats.total}</p>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className={`rounded-xl p-4 ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`}>
+          <div className="flex items-center justify-between mb-2">
+            <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Total Users</span>
+            <Icon icon={Icons.Users} size={18} className="text-orange-500" />
+          </div>
+          <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{stats.total}</p>
+          <p className={`text-xs mt-1 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>+149 this month</p>
         </div>
-        <div className={`border rounded-md p-3 ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-          <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Active</p>
-          <p className={`text-xl font-semibold text-green-500`}>{stats.active}</p>
+        <div className={`rounded-xl p-4 ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`}>
+          <div className="flex items-center justify-between mb-2">
+            <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Active</span>
+            <Icon icon={Icons.UserCheck} size={18} className="text-green-500" />
+          </div>
+          <p className={`text-2xl font-bold text-green-500`}>{stats.active}</p>
         </div>
-        <div className={`border rounded-md p-3 ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-          <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Suspended</p>
-          <p className={`text-xl font-semibold text-red-500`}>{stats.suspended}</p>
+        <div className={`rounded-xl p-4 ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`}>
+          <div className="flex items-center justify-between mb-2">
+            <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Suspended</span>
+            <Icon icon={Icons.UserX} size={18} className="text-red-500" />
+          </div>
+          <p className={`text-2xl font-bold text-red-500`}>{stats.suspended}</p>
         </div>
-        <div className={`border rounded-md p-3 ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-          <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Pending</p>
-          <p className={`text-xl font-semibold text-yellow-500`}>{stats.pending}</p>
+        <div className={`rounded-xl p-4 ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`}>
+          <div className="flex items-center justify-between mb-2">
+            <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Pending</span>
+            <Icon icon={Icons.Clock} size={18} className="text-yellow-500" />
+          </div>
+          <p className={`text-2xl font-bold text-yellow-500`}>{stats.pending}</p>
         </div>
-        <div className={`border rounded-md p-3 ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-          <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Customers</p>
-          <p className={`text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{stats.customers}</p>
+        <div className={`rounded-xl p-4 ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`}>
+          <div className="flex items-center justify-between mb-2">
+            <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Customers</span>
+            <Icon icon={Icons.User} size={18} className="text-blue-500" />
+          </div>
+          <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{stats.customers}</p>
         </div>
-        <div className={`border rounded-md p-3 ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-          <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Providers</p>
-          <p className={`text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{stats.providers}</p>
+        <div className={`rounded-xl p-4 ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`}>
+          <div className="flex items-center justify-between mb-2">
+            <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Providers</span>
+            <Icon icon={Icons.Verified} size={18} className="text-orange-500" />
+          </div>
+          <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{stats.providers}</p>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className="flex flex-col sm:flex-row gap-4">
         <div className="flex-1 relative">
-          <Icon icon={Icons.Search} size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Icon icon={Icons.Search} size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search by name or email..."
-            className={`w-full pl-9 pr-3 py-1.5 text-sm border rounded-md focus:outline-none focus:border-orange-500 ${
+            className={`w-full pl-10 pr-4 py-2 rounded-lg border focus:outline-none focus:border-orange-500 ${
               darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-300 text-gray-900'
             }`}
           />
@@ -110,75 +119,76 @@ export default function AdminUsers() {
         <select
           value={filterRole}
           onChange={(e) => setFilterRole(e.target.value)}
-          className={`px-3 py-1.5 text-sm border rounded-md focus:outline-none focus:border-orange-500 ${
+          className={`px-4 py-2 rounded-lg border focus:outline-none focus:border-orange-500 ${
             darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-300 text-gray-900'
           }`}
         >
-          <option value="all">All roles</option>
+          <option value="all">All Roles</option>
           <option value="customer">Customers</option>
           <option value="provider">Providers</option>
         </select>
       </div>
 
       {/* Users Table */}
-      <div className={`border rounded-md overflow-hidden ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+      <div className={`rounded-xl overflow-hidden border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full">
             <thead className={darkMode ? 'bg-gray-800' : 'bg-gray-50'}>
               <tr className={`border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                <th className="text-left px-4 py-3 font-medium">User</th>
-                <th className="text-left px-4 py-3 font-medium">Role</th>
-                <th className="text-left px-4 py-3 font-medium">Status</th>
-                <th className="text-left px-4 py-3 font-medium">Joined</th>
-                <th className="text-left px-4 py-3 font-medium">Activity</th>
-                <th className="text-left px-4 py-3 font-medium"></th>
+                <th className="text-left px-6 py-4 font-medium">User</th>
+                <th className="text-left px-6 py-4 font-medium">Role</th>
+                <th className="text-left px-6 py-4 font-medium">Status</th>
+                <th className="text-left px-6 py-4 font-medium">Joined</th>
+                <th className="text-left px-6 py-4 font-medium">Activity</th>
+                <th className="text-left px-6 py-4 font-medium"></th>
               </tr>
             </thead>
             <tbody>
               {filteredUsers.map((user) => (
                 <tr key={user.id} className={`border-b ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
-                  <td className="px-4 py-3">
+                  <td className="px-6 py-4">
                     <div>
-                      <p className={darkMode ? 'text-white' : 'text-gray-900'}>{user.name}</p>
+                      <p className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>{user.name}</p>
                       <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>{user.email}</p>
                     </div>
                   </td>
-                  <td className="px-4 py-3">
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                  <td className="px-6 py-4">
+                    <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full ${
                       user.role === 'provider' 
                         ? 'bg-orange-500/10 text-orange-500' 
                         : 'bg-blue-500/10 text-blue-500'
                     }`}>
+                      {user.role === 'provider' ? <Icon icon={Icons.Verified} size={12} /> : <Icon icon={Icons.User} size={12} />}
                       {user.role}
                     </span>
                   </td>
-                  <td className="px-4 py-3">
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                  <td className="px-6 py-4">
+                    <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full ${
                       user.status === 'active' ? 'bg-green-500/10 text-green-500' :
                       user.status === 'suspended' ? 'bg-red-500/10 text-red-500' :
                       'bg-yellow-500/10 text-yellow-500'
                     }`}>
+                      {user.status === 'active' && <Icon icon={Icons.CheckCircle} size={12} />}
+                      {user.status === 'suspended' && <Icon icon={Icons.XCircle} size={12} />}
+                      {user.status === 'pending' && <Icon icon={Icons.Clock} size={12} />}
                       {user.status}
                     </span>
                   </td>
-                  <td className={`px-4 py-3 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{user.joined}</td>
-                  <td className={`px-4 py-3 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  <td className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{user.joined}</td>
+                  <td className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                     {user.role === 'provider' ? `${user.signals} signals` : `${user.purchases} purchases`}
                   </td>
-                  <td className="px-4 py-3">
-                    <div className="flex gap-2">
+                  <td className="px-6 py-4">
+                    <div className="flex gap-3">
                       <button
                         onClick={() => toggleUserStatus(user.id)}
-                        className={`text-xs ${user.status === 'active' ? 'text-red-500' : 'text-green-500'} hover:underline`}
+                        className={`text-sm ${user.status === 'active' ? 'text-red-500' : 'text-green-500'} hover:underline`}
                       >
                         {user.status === 'active' ? 'Suspend' : 'Activate'}
                       </button>
-                      <button
-                        onClick={() => deleteUser(user.id)}
-                        className="text-red-500 text-xs hover:underline"
-                      >
-                        Delete
-                      </button>
+                      <Link to={`/admin/users/${user.id}`} className="text-blue-500 text-sm hover:underline">
+                        View
+                      </Link>
                     </div>
                   </td>
                 </tr>

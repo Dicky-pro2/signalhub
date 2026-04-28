@@ -24,7 +24,7 @@ import {
 export default function AdminReports() {
   const { darkMode } = useTheme();
   const [dateRange, setDateRange] = useState('month');
-  const [chartType, setChartType] = useState('line'); // line, area, bar
+  const [chartType, setChartType] = useState('line');
 
   // Revenue data
   const revenueData = [
@@ -117,28 +117,48 @@ export default function AdminReports() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-        <div>
-          <h1 className={`text-xl font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-            Reports & Analytics
-          </h1>
-          <p className={`text-sm mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-            Platform performance metrics and insights
-          </p>
+      <div>
+        <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+          Reports & Analytics
+        </h1>
+        <p className={`text-sm mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+          Platform performance metrics and insights
+        </p>
+      </div>
+
+      {/* Stats Cards - Updated to match other admin pages */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className={`rounded-xl p-4 ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`}>
+          <div className="flex items-center justify-between mb-2">
+            <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Total Revenue</span>
+            <Icon icon={Icons.Dollar} size={18} className="text-orange-500" />
+          </div>
+          <p className={`text-2xl font-bold text-orange-500`}>${totalRevenue.toLocaleString()}</p>
+          <p className={`text-xs mt-1 text-green-500`}>+23.5% vs last month</p>
         </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => downloadReport('csv')}
-            className={`px-3 py-1.5 text-sm border rounded-md ${darkMode ? 'border-gray-600 hover:bg-gray-700' : 'border-gray-300 hover:bg-gray-50'}`}
-          >
-            Export CSV
-          </button>
-          <button
-            onClick={() => downloadReport('pdf')}
-            className={`px-3 py-1.5 text-sm border rounded-md ${darkMode ? 'border-gray-600 hover:bg-gray-700' : 'border-gray-300 hover:bg-gray-50'}`}
-          >
-            Export PDF
-          </button>
+        <div className={`rounded-xl p-4 ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`}>
+          <div className="flex items-center justify-between mb-2">
+            <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Platform Profit</span>
+            <Icon icon={Icons.TrendingUp} size={18} className="text-green-500" />
+          </div>
+          <p className={`text-2xl font-bold text-green-500`}>${totalProfit.toLocaleString()}</p>
+          <p className={`text-xs mt-1 text-green-500`}>+18.2% vs last month</p>
+        </div>
+        <div className={`rounded-xl p-4 ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`}>
+          <div className="flex items-center justify-between mb-2">
+            <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Total Users</span>
+            <Icon icon={Icons.Users} size={18} className="text-blue-500" />
+          </div>
+          <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{totalUsers.toLocaleString()}</p>
+          <p className={`text-xs mt-1 text-green-500`}>+156 this month</p>
+        </div>
+        <div className={`rounded-xl p-4 ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`}>
+          <div className="flex items-center justify-between mb-2">
+            <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Total Signals</span>
+            <Icon icon={Icons.Chart} size={18} className="text-purple-500" />
+          </div>
+          <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{totalSignals}</p>
+          <p className={`text-xs mt-1 text-green-500`}>+103 this month</p>
         </div>
       </div>
 
@@ -159,59 +179,47 @@ export default function AdminReports() {
         ))}
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className={`border rounded-md p-3 ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-          <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Total Revenue</p>
-          <p className={`text-xl font-semibold text-orange-500`}>${totalRevenue.toLocaleString()}</p>
-          <p className={`text-xs mt-1 text-green-500`}>+23.5% vs last month</p>
-        </div>
-        <div className={`border rounded-md p-3 ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-          <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Platform Profit</p>
-          <p className={`text-xl font-semibold text-green-500`}>${totalProfit.toLocaleString()}</p>
-          <p className={`text-xs mt-1 text-green-500`}>+18.2% vs last month</p>
-        </div>
-        <div className={`border rounded-md p-3 ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-          <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Total Users</p>
-          <p className={`text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{totalUsers.toLocaleString()}</p>
-          <p className={`text-xs mt-1 text-green-500`}>+156 this month</p>
-        </div>
-        <div className={`border rounded-md p-3 ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-          <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Total Signals</p>
-          <p className={`text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{totalSignals}</p>
-          <p className={`text-xs mt-1 text-green-500`}>+103 this month</p>
-        </div>
-      </div>
-
       {/* Revenue Chart with Chart Type Toggle */}
-      <div className={`border rounded-md p-4 ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+      <div className={`rounded-xl p-4 ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`}>
         <div className="flex justify-between items-center mb-4">
-          <h2 className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+          <h2 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
             Revenue Overview
           </h2>
           <div className="flex gap-1">
             <button
               onClick={() => setChartType('line')}
-              className={`px-2 py-1 text-xs rounded ${chartType === 'line' ? 'bg-orange-500 text-white' : darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}
+              className={`px-3 py-1 text-xs rounded ${
+                chartType === 'line' 
+                  ? 'bg-orange-500 text-white' 
+                  : darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'
+              }`}
             >
               Line
             </button>
             <button
               onClick={() => setChartType('area')}
-              className={`px-2 py-1 text-xs rounded ${chartType === 'area' ? 'bg-orange-500 text-white' : darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}
+              className={`px-3 py-1 text-xs rounded ${
+                chartType === 'area' 
+                  ? 'bg-orange-500 text-white' 
+                  : darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'
+              }`}
             >
               Area
             </button>
             <button
               onClick={() => setChartType('bar')}
-              className={`px-2 py-1 text-xs rounded ${chartType === 'bar' ? 'bg-orange-500 text-white' : darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}
+              className={`px-3 py-1 text-xs rounded ${
+                chartType === 'bar' 
+                  ? 'bg-orange-500 text-white' 
+                  : darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'
+              }`}
             >
               Bar
             </button>
           </div>
         </div>
         
-        <ResponsiveContainer width="100%" height={300}>
+        <ResponsiveContainer width="100%" height={320}>
           {chartType === 'line' && (
             <LineChart data={revenueData}>
               <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#e5e7eb'} />
@@ -248,14 +256,14 @@ export default function AdminReports() {
         </ResponsiveContainer>
       </div>
 
-      {/* Two Column Charts - Line Charts */}
-      <div className="grid md:grid-cols-2 gap-4">
-        {/* User Growth Line Chart */}
-        <div className={`border rounded-md p-4 ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-          <h2 className={`text-sm font-medium mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+      {/* Two Column Charts */}
+      <div className="grid md:grid-cols-2 gap-6">
+        {/* User Growth Chart */}
+        <div className={`rounded-xl p-4 ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`}>
+          <h2 className={`text-lg font-semibold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
             User Growth
           </h2>
-          <ResponsiveContainer width="100%" height={250}>
+          <ResponsiveContainer width="100%" height={260}>
             <LineChart data={userData}>
               <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#e5e7eb'} />
               <XAxis dataKey="name" stroke={darkMode ? '#9ca3af' : '#6b7280'} />
@@ -273,12 +281,12 @@ export default function AdminReports() {
           </div>
         </div>
 
-        {/* Signals & Purchases Line Chart */}
-        <div className={`border rounded-md p-4 ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-          <h2 className={`text-sm font-medium mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+        {/* Signals & Purchases Chart */}
+        <div className={`rounded-xl p-4 ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`}>
+          <h2 className={`text-lg font-semibold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
             Signals & Purchases
           </h2>
-          <ResponsiveContainer width="100%" height={250}>
+          <ResponsiveContainer width="100%" height={260}>
             <LineChart data={signalData}>
               <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#e5e7eb'} />
               <XAxis dataKey="name" stroke={darkMode ? '#9ca3af' : '#6b7280'} />
@@ -298,20 +306,20 @@ export default function AdminReports() {
       </div>
 
       {/* Pie Charts Row */}
-      <div className="grid md:grid-cols-2 gap-4">
+      <div className="grid md:grid-cols-2 gap-6">
         {/* Market Distribution Pie Chart */}
-        <div className={`border rounded-md p-4 ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-          <h2 className={`text-sm font-medium mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+        <div className={`rounded-xl p-4 ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`}>
+          <h2 className={`text-lg font-semibold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
             Market Distribution
           </h2>
-          <ResponsiveContainer width="100%" height={250}>
+          <ResponsiveContainer width="100%" height={260}>
             <PieChart>
               <Pie
                 data={marketDistribution}
                 cx="50%"
                 cy="50%"
                 innerRadius={60}
-                outerRadius={80}
+                outerRadius={90}
                 paddingAngle={5}
                 dataKey="value"
                 label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
@@ -333,18 +341,18 @@ export default function AdminReports() {
         </div>
 
         {/* Revenue Distribution Pie Chart */}
-        <div className={`border rounded-md p-4 ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-          <h2 className={`text-sm font-medium mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+        <div className={`rounded-xl p-4 ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`}>
+          <h2 className={`text-lg font-semibold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
             Revenue Distribution
           </h2>
-          <ResponsiveContainer width="100%" height={250}>
+          <ResponsiveContainer width="100%" height={260}>
             <PieChart>
               <Pie
                 data={revenueDistribution}
                 cx="50%"
                 cy="50%"
                 innerRadius={60}
-                outerRadius={80}
+                outerRadius={90}
                 paddingAngle={5}
                 dataKey="value"
                 label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
@@ -367,15 +375,15 @@ export default function AdminReports() {
       </div>
 
       {/* Top Providers Bar Chart */}
-      <div className={`border rounded-md p-4 ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-        <h2 className={`text-sm font-medium mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+      <div className={`rounded-xl p-4 ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`}>
+        <h2 className={`text-lg font-semibold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
           Top Performing Providers
         </h2>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={topProviders} layout="vertical" margin={{ left: 80 }}>
+        <ResponsiveContainer width="100%" height={320}>
+          <BarChart data={topProviders} layout="vertical" margin={{ left: 100 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#e5e7eb'} />
             <XAxis type="number" stroke={darkMode ? '#9ca3af' : '#6b7280'} />
-            <YAxis type="category" dataKey="name" stroke={darkMode ? '#9ca3af' : '#6b7280'} />
+            <YAxis type="category" dataKey="name" stroke={darkMode ? '#9ca3af' : '#6b7280'} width={100} />
             <Tooltip content={<CustomTooltip />} />
             <Legend />
             <Bar dataKey="signals" fill={chartColors.signals} radius={[0, 4, 4, 0]} />
@@ -384,26 +392,26 @@ export default function AdminReports() {
         </ResponsiveContainer>
       </div>
 
-      {/* Quick Stats Footer */}
-      <div className={`border rounded-md p-4 ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-        <h2 className={`text-sm font-medium mb-3 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+      {/* Key Metrics Footer */}
+      <div className={`rounded-xl p-4 ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`}>
+        <h2 className={`text-lg font-semibold mb-3 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
           Key Metrics
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
           <div>
-            <p className={`text-2xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>89%</p>
+            <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>89%</p>
             <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>Avg Win Rate</p>
           </div>
           <div>
-            <p className={`text-2xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>4.85</p>
+            <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>4.85</p>
             <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>Provider Rating</p>
           </div>
           <div>
-            <p className={`text-2xl font-semibold text-green-500`}>+23.5%</p>
+            <p className={`text-2xl font-bold text-green-500`}>+23.5%</p>
             <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>Monthly Growth</p>
           </div>
           <div>
-            <p className={`text-2xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>2.3k</p>
+            <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>2.3k</p>
             <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>Active Traders</p>
           </div>
         </div>

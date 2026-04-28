@@ -33,6 +33,15 @@ import AdminSignals from "./pages/admin/AdminSignals";
 import AdminTransactions from "./pages/admin/AdminTransactions";
 import AdminReports from "./pages/admin/AdminReports";
 import ProviderDetails from "./pages/admin/ProviderDetails";
+import NotFoundPage from "./pages/NotFoundPage";
+import CookiePolicy from "./pages/CookiePolicy";
+import CookieBanner from "./components/CookieBanner";
+import VerifyEmail from "./pages/VerifyEmail";
+import ResetPassword from "./pages/ResetPassword";
+import TwoFASetup from "./pages/TwoFASetup";
+import ForgotPassword from "./pages/ForgotPassword";
+import ActivityLog from "./pages/ActivityLog";
+
 
 // Protected route wrapper
 function ProtectedRoute({ children, allowedRoles }) {
@@ -71,6 +80,7 @@ function AppRoutes() {
     <Routes>
       {/* Public routes */}
       <Route path="/" element={<LandingPage />} />
+      <Route path="/cookie-policy" element={<CookiePolicy />} />
       <Route
         path="/signup"
         element={user ? <Navigate to={getDefaultRoute()} /> : <SignUpPage />}
@@ -78,6 +88,22 @@ function AppRoutes() {
       <Route
         path="/signin"
         element={user ? <Navigate to={getDefaultRoute()} /> : <SignInPage />}
+      />
+      <Route
+        path="/verify-email"
+        element={<VerifyEmail />}
+      />
+      <Route
+        path="/reset-password"
+        element={<ResetPassword />}
+      />
+      <Route
+        path="/2fa-setup"
+        element={<TwoFASetup />}
+      />
+      <Route
+        path="/forgot-password"
+        element={<ForgotPassword />}
       />
 
       {/* Marketplace route */}
@@ -107,6 +133,7 @@ function AppRoutes() {
         <Route path="watchlist" element={<Watchlist />} />
         <Route path="notifications" element={<Notifications />} />
         <Route path="settings" element={<Settings />} />
+        <Route path="activity-log" element={<ActivityLog />} />
       </Route>
 
       {/* Provider routes */}
@@ -127,6 +154,7 @@ function AppRoutes() {
         <Route path="analytics" element={<ProviderAnalytics />} />
         <Route path="notifications" element={<Notifications />} />
         <Route path="settings" element={<Settings />} />
+        <Route path="activity-log" element={<ActivityLog />} />
         <Route path="withdraw" element={<WithdrawFunds />} />
       </Route>
 
@@ -147,7 +175,12 @@ function AppRoutes() {
         <Route path="transactions" element={<AdminTransactions />} />
         <Route path="reports" element={<AdminReports />} />
         <Route path="providers/:id" element={<ProviderDetails />} />
+        <Route path="2FA" element={<TwoFASetup />} />
       </Route>
+
+      {/* Catch-all route for 404 */}
+      <Route path="*" element={<Navigate to="/not-found" />} />
+      <Route path="/not-found" element={<NotFoundPage />} />
     </Routes>
   );
 }
@@ -169,6 +202,7 @@ function App() {
             )}
             <NotificationProvider>
               <AppRoutes />
+              <CookieBanner />
             </NotificationProvider>
           </AuthProvider>
         </ColorProvider>

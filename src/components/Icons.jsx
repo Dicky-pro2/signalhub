@@ -60,6 +60,7 @@ import {
   FaTelegram,
   FaDiscord,
   FaGithub,
+  FaRegEyeSlash,
 } from "react-icons/fa6";
 
 import {
@@ -144,6 +145,7 @@ import {
   FaBookmark,
   FaUndo,
   FaCamera,
+  FaEye,
 } from "react-icons/fa";
 
 // Export each icon individually with clear names
@@ -292,6 +294,8 @@ Code: FaCode,
 Bookmark: FaBookmark,
 Sliders: FaSlidersH,
 Reset: FaUndo,
+Eye: FaEye,
+EyeOff: FaRegEyeSlash,
 };
 
 export default Icons;
