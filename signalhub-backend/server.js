@@ -1,57 +1,121 @@
-// server.js
+// server.js - REAL DATABASE VERSION
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
-const pool = require('./src/config/database');
-
-// Import routes
-const authRoutes = require('./src/routes/authRoutes');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const { Pool } = require('pg');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Security middleware
-app.use(helmet());
+// Database connection
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+});
+
+// Test database connection
+pool.connect((err, client, release) => {
+    if (err) {
+        console.error('❌ Database connection failed:', err.message);
+    } else {
+        console.log('✅ Database connected successfully');
+        release();
+    }
+});
+
+// Middleware
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: 'http://localhost:5173',
     credentials: true
 }));
-
-// Rate limiting
-const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 100,
-    message: 'Too many requests, please try again later.'
-});
-app.use(limiter);
-
-// Body parsing
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Routes
-app.use('/api/auth', authRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// 404 handler
-app.use('*', (req, res) => {
-    res.status(404).json({ error: 'Route not found' });
+// SIGNUP - Real Database
+app.post('/api/auth/signup', async (req, res) => {
+    const { email, password, fullName, role = 'customer' } = req.body;
+    
+    if (!email || !password) {
+        return res.status(400).json({ error: 'Email and password required' });
+    }
+    
+    try {
+        // Check if user exists
+        const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email.toLowerCase()]);
+        if (existing.rows.length > 0) {
+            return res.status(400).json({ error: 'Email already registered' });
+        }
+        
+        // Hash password
+        const hashedPassword = await bcrypt.hash(password, 10);
+        
+        // Create user
+        const result = await pool.query(
+            `INSERT INTO users (email, password_hash, full_name, role, wallet_balance) 
+             VALUES ($1, $2, $3, $4, $5) 
+             RETURNING id, email, full_name, role, wallet_balance`,
+            [email.toLowerCase(), hashedPassword, fullName, role, 0]
+        );
+        
+        const user = result.rows[0];
+        
+        // Create JWT token
+        const token = jwt.sign(
+            { userId: user.id, email: user.email, role: user.role },
+            process.env.JWT_SECRET || 'secretkey',
+            { expiresIn: '7d' }
+        );
+        
+        res.status(201).json({ user, token });
+        
+    } catch (error) {
+        console.error('Signup error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
-// Error handler
-app.use((err, req, res, next) => {
-    console.error('Error:', err.message);
-    res.status(500).json({ error: 'Internal server error' });
+// LOGIN - Real Database
+app.post('/api/auth/login', async (req, res) => {
+    const { email, password } = req.body;
+    
+    try {
+        const result = await pool.query(
+            'SELECT id, email, password_hash, full_name, role, wallet_balance FROM users WHERE email = $1',
+            [email.toLowerCase()]
+        );
+        
+        if (result.rows.length === 0) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+        
+        const user = result.rows[0];
+        const isValid = await bcrypt.compare(password, user.password_hash);
+        
+        if (!isValid) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+        
+        const token = jwt.sign(
+            { userId: user.id, email: user.email, role: user.role },
+            process.env.JWT_SECRET || 'secretkey',
+            { expiresIn: '7d' }
+        );
+        
+        const { password_hash, ...userWithoutPassword } = user;
+        res.json({ user: userWithoutPassword, token });
+        
+    } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
-// Start server
 app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-    console.log(`📍 http://localhost:${PORT}`);
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
 });

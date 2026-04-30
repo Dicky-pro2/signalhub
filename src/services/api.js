@@ -1,8 +1,9 @@
 // src/services/api.js
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = 'http://localhost:5000/api';
 
 export const authAPI = {
-    signup: async (email, password, fullName, role) => {
+    // Signup - connects to backend
+    signup: async (email, password, fullName, role = 'customer') => {
         const response = await fetch(`${API_URL}/auth/signup`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -10,10 +11,13 @@ export const authAPI = {
         });
         
         const data = await response.json();
-        if (!response.ok) throw new Error(data.error || 'Signup failed');
+        if (!response.ok) {
+            throw new Error(data.error || data.message || 'Signup failed');
+        }
         return data;
     },
     
+    // Login - connects to backend
     login: async (email, password) => {
         const response = await fetch(`${API_URL}/auth/login`, {
             method: 'POST',
@@ -22,17 +26,9 @@ export const authAPI = {
         });
         
         const data = await response.json();
-        if (!response.ok) throw new Error(data.error || 'Login failed');
+        if (!response.ok) {
+            throw new Error(data.error || 'Login failed');
+        }
         return data;
     },
-    
-    getMe: async (token) => {
-        const response = await fetch(`${API_URL}/auth/me`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || 'Failed to get user');
-        return data;
-    }
 };
