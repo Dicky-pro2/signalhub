@@ -371,7 +371,7 @@ export default function Wallet() {
                       <td className={`py-3 font-semibold ${
                         tx.type === 'deposit' ? 'text-green-500' : 'text-red-500'
                       }`}>
-                        {tx.type === 'deposit' ? '+' : '-'}${tx.amount?.toFixed(2)}
+                        {tx.type === 'deposit' ? '+' : '-'}₦{tx.amount?.toFixed(2)}
                       </td>
                       <td className="py-3">
                         <span className={`text-xs px-2 py-1 rounded-full ${

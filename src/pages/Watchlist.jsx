@@ -1,87 +1,140 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { supabase } from '../config/supabase';
 
 export default function Watchlist() {
+  const { user } = useAuth();
   const { darkMode } = useTheme();
   const [watchlist, setWatchlist] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [alertPair, setAlertPair] = useState('');
+  const [alertPrice, setAlertPrice] = useState('');
+  const [success, setSuccess] = useState('');
 
   useEffect(() => {
+    if (!user) return;
     fetchWatchlist();
-  }, []);
+  }, [user]);
 
   const fetchWatchlist = async () => {
-    // Mock data - replace with API call
-    setTimeout(() => {
-      setWatchlist([
-        { id: 1, pair: 'BTC/USD', market: 'crypto', price: 68420, change: '+2.7%', provider: 'CryptoKing', signalPrice: 4.99, addedAt: '2024-01-15' },
-        { id: 2, pair: 'ETH/USD', market: 'crypto', price: 3845, change: '+5.57%', provider: 'EtherWhale', signalPrice: 3.99, addedAt: '2024-01-14' },
-        { id: 3, pair: 'EUR/USD', market: 'forex', price: 1.0892, change: '+0.42%', provider: 'ForexMaster', signalPrice: 2.99, addedAt: '2024-01-13' },
-        { id: 4, pair: 'NVDA', market: 'stocks', price: 892.64, change: '+3.42%', provider: 'AIInvestor', signalPrice: 4.99, addedAt: '2024-01-12' },
-      ]);
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('watchlist')
+        .select(`
+          *,
+          profiles!provider_id(id, full_name, avatar_url, bio)
+        `)
+        .eq('customer_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setWatchlist(data || []);
+      if (data?.length > 0) setAlertPair(data[0].profiles?.full_name || '');
+    } catch (err) {
+      console.error('Watchlist fetch error:', err);
+    } finally {
       setLoading(false);
-    }, 500);
-  };
-
-  const removeFromWatchlist = (id) => {
-    setWatchlist(watchlist.filter(item => item.id !== id));
-  };
-
-  const getMarketColor = (market) => {
-    switch(market) {
-      case 'forex': return 'bg-green-500/20 text-green-500';
-      case 'crypto': return 'bg-orange-500/20 text-orange-500';
-      case 'stocks': return 'bg-blue-500/20 text-blue-500';
-      default: return 'bg-gray-500/20 text-gray-500';
     }
   };
+
+  const removeFromWatchlist = async (id, providerId) => {
+    try {
+      await supabase
+        .from('watchlist')
+        .delete()
+        .eq('id', id)
+        .eq('customer_id', user.id);
+
+      setWatchlist(watchlist.filter(item => item.id !== id));
+    } catch (err) {
+      console.error('Remove error:', err);
+    }
+  };
+
+  const handleSetAlert = async (e) => {
+    e.preventDefault();
+    if (!alertPrice) return;
+
+    try {
+      await supabase.from('notifications').insert({
+        user_id: user.id,
+        title: 'Price Alert Set',
+        message: `You'll be notified when ${alertPair} reaches $${alertPrice}`,
+        type: 'info',
+      });
+      setSuccess('Price alert set successfully!');
+      setAlertPrice('');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      console.error('Alert error:', err);
+    }
+  };
+
+  const getMarketColor = (asset) => {
+    const a = asset?.toLowerCase();
+    if (['btc', 'eth', 'sol', 'bnb', 'doge', 'xrp'].some(c => a?.includes(c)))
+      return 'bg-orange-500/20 text-orange-500';
+    if (['aapl', 'nvda', 'tsla', 'msft', 'amzn', 'googl'].some(c => a?.includes(c)))
+      return 'bg-blue-500/20 text-blue-500';
+    return 'bg-green-500/20 text-green-500';
+  };
+
+  const text = darkMode ? 'text-white' : 'text-gray-800';
+  const subtext = darkMode ? 'text-gray-400' : 'text-gray-500';
+  const card = `rounded-xl p-4 ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`;
+  const input = `w-full px-3 py-2 rounded-lg border focus:outline-none focus:border-orange-500 ${
+    darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-800'
+  }`;
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-          My Watchlist
-        </h1>
-        <p className={darkMode ? 'text-gray-400' : 'text-gray-500'}>
-          Track your favorite signals and get notified of updates
-        </p>
+        <h1 className={`text-2xl font-bold ${text}`}>My Watchlist</h1>
+        <p className={subtext}>Track your favorite providers and get notified of updates</p>
       </div>
 
-      {/* Watchlist Stats */}
+      {success && (
+        <div className="bg-green-500/10 border border-green-500/50 text-green-400 px-4 py-3 rounded-lg text-sm">
+          {success}
+        </div>
+      )}
+
+      {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
-        <div className={`rounded-xl p-4 ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`}>
-          <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Total Tracked</p>
-          <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-            {watchlist.length}
-          </p>
+        <div className={card}>
+          <p className={`text-sm ${subtext}`}>Total Tracked</p>
+          <p className={`text-2xl font-bold ${text}`}>{watchlist.length}</p>
         </div>
-        <div className={`rounded-xl p-4 ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`}>
-          <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Avg Change</p>
-          <p className={`text-2xl font-bold text-green-500`}>
-            +3.2%
-          </p>
+        <div className={card}>
+          <p className={`text-sm ${subtext}`}>Providers</p>
+          <p className="text-2xl font-bold text-orange-500">{watchlist.length}</p>
         </div>
-        <div className={`rounded-xl p-4 ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`}>
-          <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Potential Savings</p>
-          <p className={`text-2xl font-bold text-orange-500`}>
-            $12.96
+        <div className={card}>
+          <p className={`text-sm ${subtext}`}>Added This Week</p>
+          <p className={`text-2xl font-bold ${text}`}>
+            {watchlist.filter(w => {
+              const added = new Date(w.created_at);
+              const weekAgo = new Date();
+              weekAgo.setDate(weekAgo.getDate() - 7);
+              return added >= weekAgo;
+            }).length}
           </p>
         </div>
       </div>
 
-      {/* Watchlist Table */}
+      {/* Watchlist */}
       {loading ? (
         <div className="flex justify-center py-12">
-          <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : watchlist.length === 0 ? (
         <div className={`text-center py-12 rounded-xl ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`}>
           <div className="text-6xl mb-4">👁️</div>
-          <p className={`text-lg ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-            Your watchlist is empty
-          </p>
+          <p className={`text-lg ${subtext}`}>Your watchlist is empty</p>
           <Link to="/marketplace" className="text-orange-500 hover:underline mt-2 inline-block">
             Browse Marketplace →
           </Link>
@@ -91,45 +144,43 @@ export default function Watchlist() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className={darkMode ? 'bg-gray-700' : 'bg-gray-50'}>
-                <tr>
-                  <th className="text-left px-4 py-3">Pair</th>
-                  <th className="text-left px-4 py-3">Market</th>
-                  <th className="text-left px-4 py-3">Price</th>
-                  <th className="text-left px-4 py-3">24h Change</th>
+                <tr className={subtext}>
                   <th className="text-left px-4 py-3">Provider</th>
-                  <th className="text-left px-4 py-3">Signal Price</th>
+                  <th className="text-left px-4 py-3">Bio</th>
+                  <th className="text-left px-4 py-3">Added</th>
                   <th className="text-left px-4 py-3">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {watchlist.map((item) => (
-                  <tr key={item.id} className="border-b border-gray-700/50">
-                    <td className={`px-4 py-3 font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                      {item.pair}
+                  <tr
+                    key={item.id}
+                    className={`border-b ${darkMode ? 'border-gray-700/50' : 'border-gray-100'}`}
+                  >
+                    <td className={`px-4 py-3 font-bold ${text}`}>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                          {item.profiles?.full_name?.charAt(0) || 'P'}
+                        </div>
+                        {item.profiles?.full_name || 'Unknown Provider'}
+                      </div>
                     </td>
-                    <td className="px-4 py-3">
-                      <span className={`text-xs px-2 py-1 rounded ${getMarketColor(item.market)}`}>
-                        {item.market}
-                      </span>
+                    <td className={`px-4 py-3 text-sm ${subtext} max-w-xs truncate`}>
+                      {item.profiles?.bio || 'No bio available'}
                     </td>
-                    <td className={`px-4 py-3 font-mono ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                      ${typeof item.price === 'number' ? item.price.toLocaleString() : item.price}
+                    <td className={`px-4 py-3 text-sm ${subtext}`}>
+                      {new Date(item.created_at).toLocaleDateString()}
                     </td>
-                    <td className={`px-4 py-3 font-semibold ${item.change.startsWith('+') ? 'text-green-500' : 'text-red-500'}`}>
-                      {item.change}
-                    </td>
-                    <td className="px-4 py-3">{item.provider}</td>
-                    <td className="px-4 py-3 text-orange-500 font-semibold">${item.signalPrice}</td>
                     <td className="px-4 py-3">
                       <div className="flex gap-2">
                         <Link
-                          to={`/marketplace?signal=${item.id}`}
+                          to="/marketplace"
                           className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded text-sm transition"
                         >
-                          Buy
+                          View Signals
                         </Link>
                         <button
-                          onClick={() => removeFromWatchlist(item.id)}
+                          onClick={() => removeFromWatchlist(item.id, item.provider_id)}
                           className="text-red-500 hover:text-red-400 text-sm"
                         >
                           Remove
@@ -146,48 +197,55 @@ export default function Watchlist() {
 
       {/* Price Alert Section */}
       <div className={`rounded-xl p-6 ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`}>
-        <h2 className={`text-xl font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-          Price Alerts
-        </h2>
-        <p className={`text-sm mb-4 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-          Set alerts for your watchlist items
-        </p>
-        
-        <div className="grid md:grid-cols-2 gap-4">
-          <div>
-            <label className={`block mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-              Select Pair
-            </label>
-            <select className={`w-full px-3 py-2 rounded-lg border ${
-              darkMode 
-                ? 'bg-gray-700 border-gray-600 text-white' 
-                : 'bg-white border-gray-300 text-gray-800'
-            }`}>
-              <option>BTC/USD</option>
-              <option>ETH/USD</option>
-              <option>EUR/USD</option>
-            </select>
-          </div>
-          <div>
-            <label className={`block mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-              Alert Price
-            </label>
-            <div className="flex gap-2">
-              <input
-                type="number"
-                placeholder="Enter price"
-                className={`flex-1 px-3 py-2 rounded-lg border ${
-                  darkMode 
-                    ? 'bg-gray-700 border-gray-600 text-white' 
-                    : 'bg-white border-gray-300 text-gray-800'
-                }`}
-              />
-              <button className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition">
-                Set Alert
-              </button>
+        <h2 className={`text-xl font-bold mb-2 ${text}`}>Price Alerts</h2>
+        <p className={`text-sm mb-4 ${subtext}`}>Set alerts for your watchlist providers</p>
+
+        {watchlist.length === 0 ? (
+          <p className={`text-sm ${subtext}`}>Add providers to your watchlist to set alerts.</p>
+        ) : (
+          <form onSubmit={handleSetAlert} className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className={`block mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                Select Provider
+              </label>
+              <select
+                value={alertPair}
+                onChange={(e) => setAlertPair(e.target.value)}
+                className={input}
+              >
+                {watchlist.map(item => (
+                  <option key={item.id} value={item.profiles?.full_name}>
+                    {item.profiles?.full_name}
+                  </option>
+                ))}
+              </select>
             </div>
-          </div>
-        </div>
+            <div>
+              <label className={`block mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                Alert Price ($)
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  value={alertPrice}
+                  onChange={(e) => setAlertPrice(e.target.value)}
+                  placeholder="Enter price"
+                  step="any"
+                  className={`flex-1 px-3 py-2 rounded-lg border focus:outline-none focus:border-orange-500 ${
+                    darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-800'
+                  }`}
+                  required
+                />
+                <button
+                  type="submit"
+                  className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition"
+                >
+                  Set Alert
+                </button>
+              </div>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );
