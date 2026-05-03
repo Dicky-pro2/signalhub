@@ -26,7 +26,7 @@ export default function SignInPage() {
     setLoading(true);
 
     try {
-      const userData = await signIn(email, password);
+      const role = userData.user_metadata?.role;
       
       // Check if user has 2FA enabled
       const twoFAEnabled = localStorage.getItem(`twoFA_${email}`) === 'true';
@@ -36,16 +36,16 @@ export default function SignInPage() {
         setShow2FA(true);
         setLoading(false);
       } else {
-        if (userData.role === 'provider') {
+        if (role === 'provider') {
           navigate('/provider');
-        } else if (userData.role === 'admin') {
+        } else if (role === 'admin') {
           navigate('/admin');
         } else {
           navigate('/dashboard');
         }
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Invalid email or password');
+      setError(err.message || 'Invalid email or password');
       setLoading(false);
     }
   };
