@@ -1,73 +1,96 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '../config/supabase';
+import { useAuth } from './AuthContext';
 
 const NotificationContext = createContext();
-
 export const useNotifications = () => useContext(NotificationContext);
 
 export const NotificationProvider = ({ children }) => {
-  const [unreadCount, setUnreadCount] = useState(0);
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
 
-  // Load notifications from localStorage or API
   useEffect(() => {
-    // In production, fetch from API
-    const savedNotifications = localStorage.getItem('notifications');
-    if (savedNotifications) {
-      const parsed = JSON.parse(savedNotifications);
-      setNotifications(parsed);
-      setUnreadCount(parsed.filter(n => !n.read).length);
-    } else {
-      // Mock data
-      const mockNotifications = [
-        { id: 1, type: 'purchase', title: 'New Signal Purchase', message: 'Someone bought your BTC/USD signal', time: '5 minutes ago', read: false },
-        { id: 2, type: 'review', title: 'New Review', message: 'Marcus T. left a 5-star review on your ETH/USD signal', time: '2 hours ago', read: false },
-        { id: 3, type: 'payout', title: 'Withdrawal Processed', message: 'Your withdrawal of $150.00 has been sent to your bank', time: '1 day ago', read: true },
-        { id: 4, type: 'signal', title: 'Signal Update', message: 'Your EUR/USD signal was marked as profitable', time: '2 days ago', read: true },
-        { id: 5, type: 'system', title: 'Provider Verification', message: 'Your provider application has been approved!', time: '3 days ago', read: true },
-      ];
-      setNotifications(mockNotifications);
-      setUnreadCount(mockNotifications.filter(n => !n.read).length);
+    if (!user) {
+      setNotifications([]);
+      setUnreadCount(0);
+      return;
     }
-  }, []);
+    fetchNotifications();
+   // subscribeToNotifications();
+  }, [user]);
 
-  const updateUnreadCount = (count) => {
-    setUnreadCount(count);
+  const fetchNotifications = async () => {
+    const { data } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+
+    setNotifications(data || []);
+    setUnreadCount(data?.filter(n => !n.is_read).length || 0);
   };
 
-  const markAsRead = (id) => {
-    const updated = notifications.map(n => 
-      n.id === id ? { ...n, read: true } : n
+ {/* const subscribeToNotifications = () => {
+    const channel = supabase
+      .channel(`notifications-${user.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'notifications',
+        filter: `user_id=eq.${user.id}`,
+      }, (payload) => {
+        setNotifications(prev => [payload.new, ...prev]);
+        setUnreadCount(prev => prev + 1);
+      })
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
+  };*/}
+
+  const markAsRead = async (id) => {
+    await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('id', id);
+
+    setNotifications(prev =>
+      prev.map(n => n.id === id ? { ...n, is_read: true } : n)
     );
-    setNotifications(updated);
-    setUnreadCount(updated.filter(n => !n.read).length);
-    localStorage.setItem('notifications', JSON.stringify(updated));
+    setUnreadCount(prev => Math.max(0, prev - 1));
   };
 
-  const markAllAsRead = () => {
-    const updated = notifications.map(n => ({ ...n, read: true }));
-    setNotifications(updated);
+  const markAllAsRead = async () => {
+    await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('user_id', user.id);
+
+    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
     setUnreadCount(0);
-    localStorage.setItem('notifications', JSON.stringify(updated));
   };
 
-  const deleteNotification = (id) => {
+  const deleteNotification = async (id) => {
+    await supabase
+      .from('notifications')
+      .delete()
+      .eq('id', id);
+
     const updated = notifications.filter(n => n.id !== id);
     setNotifications(updated);
-    setUnreadCount(updated.filter(n => !n.read).length);
-    localStorage.setItem('notifications', JSON.stringify(updated));
+    setUnreadCount(updated.filter(n => !n.is_read).length);
   };
 
-  const addNotification = (notification) => {
-    const newNotification = {
-      id: Date.now(),
-      read: false,
-      time: 'Just now',
-      ...notification
-    };
-    const updated = [newNotification, ...notifications];
-    setNotifications(updated);
-    setUnreadCount(updated.filter(n => !n.read).length);
-    localStorage.setItem('notifications', JSON.stringify(updated));
+  const addNotification = async (notification) => {
+    if (!user) return;
+    await supabase.from('notifications').insert({
+      user_id: user.id,
+      title: notification.title,
+      message: notification.message,
+      type: notification.type || 'info',
+      is_read: false,
+    });
+    // Real-time subscription will auto-update the list
   };
 
   return (
@@ -78,7 +101,6 @@ export const NotificationProvider = ({ children }) => {
       markAllAsRead,
       deleteNotification,
       addNotification,
-      updateUnreadCount
     }}>
       {children}
     </NotificationContext.Provider>

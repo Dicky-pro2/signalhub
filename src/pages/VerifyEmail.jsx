@@ -1,48 +1,32 @@
-// src/pages/VerifyEmail.jsx
-import { useState, useEffect } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
-import { useTheme } from '../context/ThemeContext';
-import Icon from '../components/Icon';
-import { Icons } from '../components/Icons';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { supabase } from '../config/supabase';
 
 export default function VerifyEmail() {
-  const { token } = useParams();
-  const navigate = useNavigate();
-  const { darkMode } = useTheme();
   const [status, setStatus] = useState('verifying'); // verifying, success, error
-  const [resendLoading, setResendLoading] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    // Simulate verification - replace with actual API call
-    setTimeout(() => {
-      if (token === 'valid-token') {
+    // Supabase handles the token from the URL automatically
+    supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN') {
         setStatus('success');
+        setTimeout(() => navigate('/signin', {
+          state: { message: 'Email confirmed! You can now sign in.' }
+        }), 2000);
       } else {
         setStatus('error');
       }
-    }, 1500);
-  }, [token]);
-
-  const handleResend = async () => {
-    setResendLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      alert('Verification email resent!');
-      setResendLoading(false);
-    }, 1000);
-  };
+    });
+  }, []);
 
   if (status === 'verifying') {
     return (
-      <div className={`min-h-screen flex items-center justify-center px-4 ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-        <div className={`max-w-md w-full p-8 rounded-xl text-center ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`}>
+      <div className="min-h-screen flex items-center justify-center px-4 bg-gray-950">
+        <div className="max-w-md w-full p-8 rounded-2xl bg-gray-900 border border-gray-800 text-center">
           <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <h2 className={`text-xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-            Verifying your email...
-          </h2>
-          <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-            Please wait while we confirm your email address
-          </p>
+          <h2 className="text-xl font-bold mb-2 text-white">Verifying your email...</h2>
+          <p className="text-sm text-gray-400">Please wait while we confirm your email address</p>
         </div>
       </div>
     );
@@ -50,18 +34,16 @@ export default function VerifyEmail() {
 
   if (status === 'success') {
     return (
-      <div className={`min-h-screen flex items-center justify-center px-4 ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-        <div className={`max-w-md w-full p-8 rounded-xl text-center ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`}>
-          <Icon icon={Icons.Success} size={48} className="mx-auto mb-4 text-green-500" />
-          <h2 className={`text-xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-            Email Verified!
-          </h2>
-          <p className={`text-sm mb-6 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-            Your email has been successfully verified.
+      <div className="min-h-screen flex items-center justify-center px-4 bg-gray-950">
+        <div className="max-w-md w-full p-8 rounded-2xl bg-gray-900 border border-gray-800 text-center">
+          <div className="text-5xl mb-4">✅</div>
+          <h2 className="text-xl font-bold mb-2 text-white">Email Verified!</h2>
+          <p className="text-sm text-gray-400 mb-6">
+            Your email has been confirmed. Redirecting you to sign in...
           </p>
           <Link
             to="/signin"
-            className="inline-block bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg transition"
+            className="inline-block bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg transition font-semibold"
           >
             Sign In Now
           </Link>
@@ -71,22 +53,19 @@ export default function VerifyEmail() {
   }
 
   return (
-    <div className={`min-h-screen flex items-center justify-center px-4 ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      <div className={`max-w-md w-full p-8 rounded-xl text-center ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`}>
-        <Icon icon={Icons.Alert} size={48} className="mx-auto mb-4 text-red-500" />
-        <h2 className={`text-xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-          Verification Failed
-        </h2>
-        <p className={`text-sm mb-4 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+    <div className="min-h-screen flex items-center justify-center px-4 bg-gray-950">
+      <div className="max-w-md w-full p-8 rounded-2xl bg-gray-900 border border-gray-800 text-center">
+        <div className="text-5xl mb-4">❌</div>
+        <h2 className="text-xl font-bold mb-2 text-white">Verification Failed</h2>
+        <p className="text-sm text-gray-400 mb-6">
           The verification link is invalid or has expired.
         </p>
-        <button
-          onClick={handleResend}
-          disabled={resendLoading}
-          className="text-orange-500 text-sm hover:underline"
+        <Link
+          to="/signin"
+          className="inline-block bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg transition font-semibold"
         >
-          {resendLoading ? 'Sending...' : 'Resend verification email'}
-        </button>
+          Back to Sign In
+        </Link>
       </div>
     </div>
   );

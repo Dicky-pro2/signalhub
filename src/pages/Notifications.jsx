@@ -88,7 +88,7 @@ export default function Notifications() {
             <div
               key={notification.id}
               className={`rounded-xl p-4 transition-all duration-300 ${
-                !notification.read
+                !notification.is_read
                   ? darkMode
                     ? 'bg-orange-500/10 border border-orange-500/30'
                     : 'bg-orange-50 border border-orange-200'
@@ -100,7 +100,7 @@ export default function Notifications() {
               <div className="flex gap-4">
                 <div className="flex-shrink-0">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    !notification.read
+                    !notification.is_read
                       ? 'bg-orange-500/20'
                       : darkMode
                       ? 'bg-gray-700'
@@ -120,7 +120,7 @@ export default function Notifications() {
                         <h3 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
                           {notification.title}
                         </h3>
-                        {!notification.read && (
+                        {!notification.is_read && (
                           <span className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></span>
                         )}
                       </div>
@@ -130,12 +130,12 @@ export default function Notifications() {
                       <div className="flex items-center gap-1 mt-2">
                         <Icon icon={Icons.Time} size={12} color={darkMode ? '#6b7280' : '#9ca3af'} />
                         <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                          {notification.time}
+                          {new Date(notification.created_at).toLocaleString()}
                         </p>
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      {!notification.read && (
+                      {!notification.is_read && (
                         <button
                           onClick={() => markAsRead(notification.id)}
                           className="text-orange-500 text-xs hover:underline flex items-center gap-1"

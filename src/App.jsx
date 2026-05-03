@@ -57,9 +57,11 @@ function ProtectedRoute({ children, allowedRoles }) {
 
   if (!user) return <Navigate to="/signin" />;
 
-  if (allowedRoles && !allowedRoles.includes(user.role)) {
-    if (user.role === "provider") return <Navigate to="/provider" />;
-    if (user.role === "admin") return <Navigate to="/admin" />;
+  const role = user.user_metadata?.role;
+
+  if (allowedRoles && !allowedRoles.includes(role)) {
+    if (role === 'provider') return <Navigate to="/provider" />;
+    if (role === 'admin') return <Navigate to="/admin" />;
     return <Navigate to="/dashboard" />;
   }
 
@@ -69,12 +71,13 @@ function ProtectedRoute({ children, allowedRoles }) {
 function AppRoutes() {
   const { user } = useAuth();
 
-  const getDefaultRoute = () => {
-    if (!user) return "/";
-    if (user.role === "admin") return "/admin";
-    if (user.role === "provider") return "/provider";
-    return "/dashboard";
-  };
+const getDefaultRoute = () => {
+  if (!user) return '/';
+  const role = user.user_metadata?.role;
+  if (role === 'admin') return '/admin';
+  if (role === 'provider') return '/provider';
+  return '/dashboard';
+};
 
   return (
     <Routes>
@@ -128,12 +131,12 @@ function AppRoutes() {
         }
       >
         <Route index element={<UserDashboard />} />
-        <Route path="purchases" element={<MyPurchases />} />
-        <Route path="wallet" element={<Wallet />} />
-        <Route path="watchlist" element={<Watchlist />} />
-        <Route path="notifications" element={<Notifications />} />
-        <Route path="settings" element={<Settings />} />
-        <Route path="activity-log" element={<ActivityLog />} />
+        <Route path="/dashboard/purchases" element={<MyPurchases />} />
+        <Route path="/dashboard/wallet" element={<Wallet />} />
+        <Route path="/dashboard/watchlist" element={<Watchlist />} />
+        <Route path="/dashboard/notifications" element={<Notifications />} />
+        <Route path="/dashboard/settings" element={<Settings />} />
+        <Route path="/dashboard/activity-log" element={<ActivityLog />} />
       </Route>
 
       {/* Provider routes */}
@@ -146,16 +149,16 @@ function AppRoutes() {
         }
       >
         <Route index element={<ProviderDashboard />} />
-        <Route path="signals" element={<ProviderSignals />} />
-        <Route path="create-signal" element={<CreateSignal />} />
-        <Route path="edit-signal/:id" element={<EditSignal />} />
-        <Route path="earnings" element={<ProviderEarnings />} />
-        <Route path="reviews" element={<ProviderReviews />} />
-        <Route path="analytics" element={<ProviderAnalytics />} />
-        <Route path="notifications" element={<Notifications />} />
-        <Route path="settings" element={<Settings />} />
-        <Route path="activity-log" element={<ActivityLog />} />
-        <Route path="withdraw" element={<WithdrawFunds />} />
+        <Route path="/provider/signals" element={<ProviderSignals />} />
+        <Route path="/provider/create-signal" element={<CreateSignal />} />
+        <Route path="/provider/edit-signal/:id" element={<EditSignal />} />
+        <Route path="/provider/earnings" element={<ProviderEarnings />} />
+        <Route path="/provider/reviews" element={<ProviderReviews />} />
+        <Route path="/provider/analytics" element={<ProviderAnalytics />} />
+        <Route path="/provider/notifications" element={<Notifications />} />
+        <Route path="/provider/settings" element={<Settings />} />
+        <Route path="/provider/activity-log" element={<ActivityLog />} />
+        <Route path="/provider/withdraw" element={<WithdrawFunds />} />
       </Route>
 
       {/* Admin routes */}
@@ -168,14 +171,14 @@ function AppRoutes() {
         }
       >
         <Route index element={<AdminDashboard />} />
-        <Route path="settings" element={<Settings />} />
-        <Route path="users" element={<AdminUsers />} />
-        <Route path="providers" element={<AdminProviders />} />
-        <Route path="signals" element={<AdminSignals />} />
-        <Route path="transactions" element={<AdminTransactions />} />
-        <Route path="reports" element={<AdminReports />} />
-        <Route path="providers/:id" element={<ProviderDetails />} />
-        <Route path="2FA" element={<TwoFASetup />} />
+        <Route path="/admin/settings" element={<Settings />} />
+        <Route path="/admin/users" element={<AdminUsers />} />
+        <Route path="/admin/providers" element={<AdminProviders />} />
+        <Route path="/admin/signals" element={<AdminSignals />} />
+        <Route path="/admin/transactions" element={<AdminTransactions />} />
+        <Route path="/admin/reports" element={<AdminReports />} />
+        <Route path="/admin/providers/:id" element={<ProviderDetails />} />
+        <Route path="/admin/2FA" element={<TwoFASetup />} />
       </Route>
 
       {/* Catch-all route for 404 */}

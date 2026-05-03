@@ -1,12 +1,8 @@
-// src/pages/ForgotPassword.jsx
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useTheme } from '../context/ThemeContext';
-import Icon from '../components/Icon';
-import { Icons } from '../components/Icons';
+import { supabase } from '../config/supabase';
 
 export default function ForgotPassword() {
-  const { darkMode } = useTheme();
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -17,30 +13,33 @@ export default function ForgotPassword() {
     setLoading(true);
     setError('');
 
-    // Simulate API call - replace with actual
-    setTimeout(() => {
-      if (email) {
-        setSubmitted(true);
-        // In production: send reset email via API
-      } else {
-        setError('Please enter a valid email');
-      }
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      setSubmitted(true);
+    } catch (err) {
+      setError(err.message || 'Failed to send reset email');
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   if (submitted) {
     return (
-      <div className={`min-h-screen flex items-center justify-center px-4 ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-        <div className={`max-w-md w-full p-8 rounded-xl text-center ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`}>
-          <Icon icon={Icons.Email} size={48} className="mx-auto mb-4 text-orange-500" />
-          <h2 className={`text-xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-            Check Your Email
-          </h2>
-          <p className={`text-sm mb-4 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-            We've sent a password reset link to <strong>{email}</strong>
+      <div className="min-h-screen flex items-center justify-center px-4 bg-gray-950">
+        <div className="max-w-md w-full p-8 rounded-2xl bg-gray-900 border border-gray-800 text-center">
+          <div className="text-5xl mb-4">📬</div>
+          <h2 className="text-xl font-bold mb-2 text-white">Check Your Email</h2>
+          <p className="text-sm text-gray-400 mb-6">
+            We sent a reset link to <span className="text-orange-500">{email}</span>. 
+            Click the link in your inbox to reset your password.
           </p>
-          <Link to="/signin" className="text-orange-500 text-sm hover:underline">
+          <Link
+            to="/signin"
+            className="inline-block bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg transition font-semibold"
+          >
             Back to Sign In
           </Link>
         </div>
@@ -49,52 +48,51 @@ export default function ForgotPassword() {
   }
 
   return (
-    <div className={`min-h-screen flex items-center justify-center px-4 ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      <div className={`max-w-md w-full p-8 rounded-xl ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`}>
-        <div className="text-center mb-6">
-          <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-            Reset Password
-          </h1>
-          <p className={`text-sm mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-            Enter your email to receive a reset link
-          </p>
+    <div className="min-h-screen flex items-center justify-center px-4 bg-gray-950">
+      <div className="max-w-md w-full">
+
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <div className="text-3xl font-bold">
+            <span className="text-white">Signal</span>
+            <span className="text-orange-500">Hub</span>
+          </div>
+          <h2 className="text-2xl font-bold mt-6 text-white">Reset Password</h2>
+          <p className="mt-2 text-gray-400">Enter your email to receive a reset link</p>
         </div>
 
-        {error && (
-          <div className="bg-red-500/10 border border-red-500 text-red-500 px-4 py-2 rounded-lg mb-4 text-sm">
-            {error}
-          </div>
-        )}
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8">
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg mb-6 text-sm">
+              {error}
+            </div>
+          )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className={`block text-sm mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-              Email Address
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className={`w-full px-4 py-2 rounded-lg border focus:outline-none focus:border-orange-500 ${
-                darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
-              }`}
-              required
-            />
-          </div>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">Email Address</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500 transition"
+                placeholder="you@example.com"
+                required
+              />
+            </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2 rounded-lg transition disabled:opacity-50"
-          >
-            {loading ? 'Sending...' : 'Send Reset Link'}
-          </button>
-        </form>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 rounded-lg transition disabled:opacity-50"
+            >
+              {loading ? 'Sending...' : 'Send Reset Link'}
+            </button>
+          </form>
 
-        <div className="text-center mt-4">
-          <Link to="/signin" className={`text-sm ${darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-700'}`}>
-            ← Back to Sign In
-          </Link>
+          <p className="text-center mt-6 text-gray-400 text-sm">
+            <Link to="/signin" className="text-orange-500 hover:underline">← Back to Sign In</Link>
+          </p>
         </div>
       </div>
     </div>

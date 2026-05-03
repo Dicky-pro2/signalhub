@@ -1,16 +1,9 @@
 import { useState, useEffect } from 'react';
-import { signalsAPI, providersAPI } from '../services/cocobase';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { supabase } from '../config/supabase';
 import Icon from '../components/Icon';
 import { Icons } from '../components/Icons';
-import PriceRangeFilter from '../components/filters/PriceRangeFilter';
-import WinRateFilter from '../components/filters/WinRateFilter';
-import AdvancedSearch from '../components/filters/AdvancedSearch';
-import SaveFilters from '../components/filters/SaveFilters';
-import TrendingSignals from '../components/trending/TrendingSignals';
-import SignalCompare from '../components/compare/SignalCompare';
-import SignalRating from '../components/ratings/SignalRating';
 
 export default function MarketplacePage() {
   const { user } = useAuth();
@@ -20,162 +13,115 @@ export default function MarketplacePage() {
   const [displayedSignals, setDisplayedSignals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedMarket, setSelectedMarket] = useState('all');
-  const [selectedPair, setSelectedPair] = useState('all');
   const [sortBy, setSortBy] = useState('latest');
-  const [priceRange, setPriceRange] = useState({ min: 0, max: 50 });
-  const [minWinRate, setMinWinRate] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchType, setSearchType] = useState('all');
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-  const [topProviders, setTopProviders] = useState([]);
   const [showBuyModal, setShowBuyModal] = useState(false);
   const [selectedSignal, setSelectedSignal] = useState(null);
   const [buying, setBuying] = useState(false);
+  const [buyError, setBuyError] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [priceRange, setPriceRange] = useState({ min: 0, max: 50 });
+  const [signalType, setSignalType] = useState('all');
   const ITEMS_PER_PAGE = 9;
-  const [trendingSignals, setTrendingSignals] = useState([]);
 
   useEffect(() => {
     fetchSignals();
-    fetchTopProviders();
-    calculateTrendingSignals();
   }, []);
 
   useEffect(() => {
-    filterSignals();
-  }, [signals, selectedMarket, selectedPair, sortBy, priceRange, minWinRate, searchQuery, searchType]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-    setHasMore(true);
-    updateDisplayedSignals();
-  }, [filteredSignals]);
-
-  const updateDisplayedSignals = () => {
-    const end = currentPage * ITEMS_PER_PAGE;
-    const newDisplayed = filteredSignals.slice(0, end);
-    setDisplayedSignals(newDisplayed);
-    setHasMore(end < filteredSignals.length);
-  };
-
-  const loadMoreSignals = () => {
-    if (!hasMore) return;
-    const nextPage = currentPage + 1;
-    setCurrentPage(nextPage);
-    const end = nextPage * ITEMS_PER_PAGE;
-    setDisplayedSignals(filteredSignals.slice(0, end));
-    setHasMore(end < filteredSignals.length);
-  };
+    filterAndSort();
+  }, [signals, selectedMarket, sortBy, searchQuery, priceRange, signalType]);
 
   const fetchSignals = async () => {
+    setLoading(true);
     try {
-      const res = await signalsAPI.getAll();
-      const signalsWithExtras = res.data.signals.map(s => ({
-        ...s,
-        purchases: Math.floor(Math.random() * 100) + 10,
-        likes: Math.floor(Math.random() * 200) + 50,
-        winRate: s.winRate || `${Math.floor(Math.random() * 30) + 60}%`
-      }));
-      setSignals(signalsWithExtras);
-      setFilteredSignals(signalsWithExtras);
-      setDisplayedSignals(signalsWithExtras.slice(0, ITEMS_PER_PAGE));
-    } catch (error) {
-      console.error('Failed to fetch signals:', error);
+      const { data, error } = await supabase
+        .from('signals')
+        .select('*, profiles!provider_id(id, full_name, avatar_url)')
+        .eq('status', 'active')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setSignals(data || []);
+    } catch (err) {
+      console.error('Failed to fetch signals:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchTopProviders = async () => {
-    try {
-      const res = await providersAPI.getTopRated();
-      setTopProviders(res.data.providers);
-    } catch (error) {
-      console.error('Failed to fetch providers:', error);
-    }
-  };
-
-  const calculateTrendingSignals = () => {
-    const trending = [...signals]
-      .sort((a, b) => (b.purchases || 0) - (a.purchases || 0))
-      .slice(0, 5);
-    setTrendingSignals(trending);
-  };
-
-  const filterSignals = () => {
+  const filterAndSort = () => {
     let filtered = [...signals];
 
+    // Market filter
     if (selectedMarket !== 'all') {
-      filtered = filtered.filter(s => s.market === selectedMarket);
-    }
-
-    if (selectedPair !== 'all') {
-      filtered = filtered.filter(s => s.pair === selectedPair);
-    }
-
-    filtered = filtered.filter(s => s.price >= priceRange.min && s.price <= priceRange.max);
-
-    filtered = filtered.filter(s => {
-      const winRateNum = parseInt(s.winRate);
-      return winRateNum >= minWinRate;
-    });
-
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
       filtered = filtered.filter(s => {
-        if (searchType === 'pair') return s.pair.toLowerCase().includes(query);
-        if (searchType === 'provider') return s.provider_name.toLowerCase().includes(query);
-        if (searchType === 'market') return s.market.toLowerCase().includes(query);
-        return s.pair.toLowerCase().includes(query) ||
-          s.provider_name.toLowerCase().includes(query) ||
-          s.market.toLowerCase().includes(query);
+        const asset = s.asset?.toLowerCase();
+        if (selectedMarket === 'crypto') return asset?.includes('btc') || asset?.includes('eth') || asset?.includes('sol') || asset?.includes('bnb') || asset?.includes('doge') || asset?.includes('xrp');
+        if (selectedMarket === 'forex') return asset?.includes('/') && !asset?.includes('usd/') || ['eur', 'gbp', 'jpy', 'aud', 'cad', 'nzd'].some(c => asset?.includes(c));
+        if (selectedMarket === 'stocks') return ['aapl', 'nvda', 'tsla', 'msft', 'amzn', 'googl'].some(c => asset?.includes(c));
+        return true;
       });
     }
 
+    // Signal type filter
+    if (signalType !== 'all') {
+      filtered = filtered.filter(s => s.signal_type === signalType);
+    }
+
+    // Price range filter
+    filtered = filtered.filter(s => {
+      const price = s.is_free ? 0 : s.price;
+      return price >= priceRange.min && price <= priceRange.max;
+    });
+
+    // Search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(s =>
+        s.asset?.toLowerCase().includes(query) ||
+        s.title?.toLowerCase().includes(query) ||
+        s.profiles?.full_name?.toLowerCase().includes(query)
+      );
+    }
+
+    // Sort
     switch (sortBy) {
       case 'price_low':
-        filtered.sort((a, b) => a.price - b.price);
+        filtered.sort((a, b) => (a.is_free ? 0 : a.price) - (b.is_free ? 0 : b.price));
         break;
       case 'price_high':
-        filtered.sort((a, b) => b.price - a.price);
+        filtered.sort((a, b) => (b.is_free ? 0 : b.price) - (a.is_free ? 0 : a.price));
         break;
-      case 'rating':
-        filtered.sort((a, b) => b.provider_rating - a.provider_rating);
+      case 'oldest':
+        filtered.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
         break;
       default:
-        filtered.sort((a, b) => b.id - a.id);
-        break;
+        filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     }
 
     setFilteredSignals(filtered);
-    calculateTrendingSignals();
+    setDisplayedSignals(filtered.slice(0, ITEMS_PER_PAGE));
+    setHasMore(filtered.length > ITEMS_PER_PAGE);
+    setCurrentPage(1);
   };
 
-  const handlePriceChange = (range) => setPriceRange(range);
-  const handleWinRateChange = (rate) => setMinWinRate(rate);
-  
-  const handleSearch = ({ term, type }) => {
-    setSearchQuery(term);
-    setSearchType(type);
-  };
-
-  const handleLoadFilter = (filters) => {
-    setSelectedMarket(filters.selectedMarket);
-    setSelectedPair(filters.selectedPair);
-    setPriceRange(filters.priceRange);
-    setMinWinRate(filters.minWinRate);
-    setSortBy(filters.sortBy);
+  const loadMore = () => {
+    const nextPage = currentPage + 1;
+    const end = nextPage * ITEMS_PER_PAGE;
+    setDisplayedSignals(filteredSignals.slice(0, end));
+    setHasMore(end < filteredSignals.length);
+    setCurrentPage(nextPage);
   };
 
   const resetFilters = () => {
     setSelectedMarket('all');
-    setSelectedPair('all');
-    setPriceRange({ min: 0, max: 50 });
-    setMinWinRate(0);
-    setSearchQuery('');
-    setSearchType('all');
     setSortBy('latest');
+    setSearchQuery('');
+    setPriceRange({ min: 0, max: 50 });
+    setSignalType('all');
   };
 
   const handleBuyClick = (signal) => {
@@ -183,47 +129,107 @@ export default function MarketplacePage() {
       alert('Please sign in to purchase signals');
       return;
     }
+    setBuyError('');
     setSelectedSignal(signal);
     setShowBuyModal(true);
   };
 
   const handleConfirmPurchase = async () => {
     setBuying(true);
+    setBuyError('');
     try {
-      await signalsAPI.buySignal(selectedSignal.id, user.id);
-      alert('Signal purchased successfully! Full analysis has been revealed.');
+      // Check wallet balance
+      const { data: wallet } = await supabase
+        .from('wallets')
+        .select('balance')
+        .eq('user_id', user.id)
+        .single();
+
+      const price = selectedSignal.is_free ? 0 : selectedSignal.price;
+
+      if (!selectedSignal.is_free && wallet.balance < price) {
+        setBuyError('Insufficient balance. Please top up your wallet.');
+        setBuying(false);
+        return;
+      }
+
+      // Create subscription
+      const { error: subError } = await supabase
+        .from('subscriptions')
+        .insert({
+          customer_id: user.id,
+          provider_id: selectedSignal.provider_id,
+          amount: price,
+          status: 'active',
+        });
+      if (subError) throw subError;
+
+      // Create transaction record
+      await supabase.from('transactions').insert({
+        user_id: user.id,
+        type: 'subscription',
+        amount: price,
+        status: 'success',
+        description: `Purchased signal: ${selectedSignal.title || selectedSignal.asset}`,
+        reference: `SIG-${Date.now()}`,
+      });
+
+      // Deduct from wallet if not free
+      if (!selectedSignal.is_free) {
+        await supabase
+          .from('wallets')
+          .update({ balance: wallet.balance - price })
+          .eq('user_id', user.id);
+
+        // Add to provider wallet (90% after 10% platform fee)
+        const providerEarning = price * 0.9;
+        const { data: providerWallet } = await supabase
+          .from('wallets')
+          .select('balance, total_earned')
+          .eq('user_id', selectedSignal.provider_id)
+          .single();
+
+        await supabase
+          .from('wallets')
+          .update({
+            balance: (providerWallet?.balance || 0) + providerEarning,
+            total_earned: (providerWallet?.total_earned || 0) + providerEarning,
+          })
+          .eq('user_id', selectedSignal.provider_id);
+      }
+
+      // Send notification to user
+      await supabase.from('notifications').insert({
+        user_id: user.id,
+        title: 'Signal Purchased!',
+        message: `You have successfully purchased the ${selectedSignal.asset} signal.`,
+        type: 'success',
+      });
+
       setShowBuyModal(false);
+      setSelectedSignal(null);
+      alert('Signal purchased successfully! Full analysis is now available.');
       fetchSignals();
-    } catch (error) {
-      alert(error.response?.data?.message || 'Purchase failed. Insufficient balance?');
+    } catch (err) {
+      setBuyError(err.message || 'Purchase failed. Please try again.');
     } finally {
       setBuying(false);
-      setSelectedSignal(null);
     }
   };
 
-  const getUniquePairs = () => {
-    const pairs = signals.map(s => s.pair);
-    return ['all', ...new Set(pairs)];
-  };
-
-  const handleTrendingSelect = (signal) => {
-    const element = document.getElementById(`signal-${signal.id}`);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      element.classList.add('ring-2', 'ring-orange-500');
-      setTimeout(() => {
-        element.classList.remove('ring-2', 'ring-orange-500');
-      }, 2000);
-    }
-  };
+  const text = darkMode ? 'text-white' : 'text-gray-800';
+  const subtext = darkMode ? 'text-gray-400' : 'text-gray-500';
+  const filterCard = `rounded-xl p-4 ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`;
+  const selectClass = `w-full px-3 py-2 text-sm rounded-lg border focus:outline-none focus:border-orange-500 ${
+    darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-800'
+  }`;
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className={darkMode ? 'text-gray-400' : 'text-gray-500'}>Loading signals...</p>
+          <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className={subtext}>Loading signals...</p>
         </div>
       </div>
     );
@@ -231,37 +237,27 @@ export default function MarketplacePage() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Header - Responsive */}
+      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
-          <h1 className={`text-xl sm:text-2xl font-bold flex items-center gap-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+          <h1 className={`text-xl sm:text-2xl font-bold flex items-center gap-2 ${text}`}>
             <Icon icon={Icons.Store} size={20} />
             Signal Marketplace
           </h1>
-          <p className={`text-xs sm:text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+          <p className={`text-xs sm:text-sm ${subtext}`}>
             Buy verified signals from top-rated traders
           </p>
         </div>
-        
-        <div className="flex gap-2 w-full sm:w-auto">
-          {/* Mobile Filter Toggle */}
-          <button
-            onClick={() => setShowMobileFilters(!showMobileFilters)}
-            className="lg:hidden flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-orange-500 text-white"
-          >
-            <Icon icon={Icons.Sliders} size={14} />
-            Filters
-          </button>
-          
-          <SaveFilters
-            currentFilters={{ selectedMarket, selectedPair, priceRange, minWinRate, sortBy }}
-            onLoadFilter={handleLoadFilter}
-            darkMode={darkMode}
-          />
-        </div>
+        <button
+          onClick={() => setShowMobileFilters(!showMobileFilters)}
+          className="lg:hidden flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-orange-500 text-white"
+        >
+          <Icon icon={Icons.Sliders} size={14} />
+          Filters
+        </button>
       </div>
 
-      {/* Search Bar - Responsive */}
+      {/* Search Bar */}
       <div className={`rounded-xl p-3 sm:p-4 ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`}>
         <div className="relative">
           <Icon icon={Icons.Search} size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -269,64 +265,33 @@ export default function MarketplacePage() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by pair, provider, or market..."
+            placeholder="Search by asset, title, or provider..."
             className={`w-full pl-9 pr-3 py-2 text-sm rounded-lg border focus:outline-none focus:border-orange-500 ${
-              darkMode 
-                ? 'bg-gray-700 border-gray-600 text-white' 
-                : 'bg-white border-gray-300 text-gray-800'
+              darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-800'
             }`}
           />
         </div>
       </div>
 
-      {/* Responsive Layout - Stack on mobile, grid on desktop */}
       <div className="flex flex-col lg:flex-row gap-6">
-        {/* Filters Sidebar - Hidden on mobile unless toggled */}
-        <div className={`${showMobileFilters ? 'block' : 'hidden'} lg:block lg:w-80 flex-shrink-0 space-y-4`}>
-          {/* Quick Filters Row for Mobile */}
-          <div className="block lg:hidden">
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="font-semibold">Filters</h3>
-              <button onClick={() => setShowMobileFilters(false)} className="text-gray-500">
-                <Icon icon={Icons.Close} size={20} />
-              </button>
-            </div>
-          </div>
+        {/* Filters Sidebar */}
+        <div className={`${showMobileFilters ? 'block' : 'hidden'} lg:block lg:w-72 flex-shrink-0 space-y-4`}>
 
-          {/* Price Range Filter */}
-          <div className={`rounded-xl p-3 sm:p-4 ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`}>
-            <PriceRangeFilter
-              minPrice={priceRange.min}
-              maxPrice={priceRange.max}
-              onPriceChange={handlePriceChange}
-              darkMode={darkMode}
-            />
-          </div>
-
-          {/* Win Rate Filter */}
-          <div className={`rounded-xl p-3 sm:p-4 ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`}>
-            <WinRateFilter
-              winRate={minWinRate}
-              onWinRateChange={handleWinRateChange}
-              darkMode={darkMode}
-            />
+          {/* Mobile close */}
+          <div className="flex justify-between items-center lg:hidden">
+            <h3 className={`font-semibold ${text}`}>Filters</h3>
+            <button onClick={() => setShowMobileFilters(false)}>
+              <Icon icon={Icons.Close} size={20} className={subtext} />
+            </button>
           </div>
 
           {/* Market Filter */}
-          <div className={`rounded-xl p-3 sm:p-4 ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`}>
-            <label className={`block text-xs sm:text-sm mb-2 flex items-center gap-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+          <div className={filterCard}>
+            <label className={`block text-sm mb-2 flex items-center gap-1 ${subtext}`}>
               <Icon icon={Icons.Chart} size={14} />
               Market
             </label>
-            <select
-              value={selectedMarket}
-              onChange={(e) => setSelectedMarket(e.target.value)}
-              className={`w-full px-2 py-1.5 sm:px-3 sm:py-2 text-sm rounded-lg border ${
-                darkMode 
-                  ? 'bg-gray-700 border-gray-600 text-white' 
-                  : 'bg-white border-gray-300 text-gray-800'
-              } focus:outline-none focus:border-orange-500`}
-            >
+            <select value={selectedMarket} onChange={(e) => setSelectedMarket(e.target.value)} className={selectClass}>
               <option value="all">🌍 All Markets</option>
               <option value="forex">💱 Forex</option>
               <option value="crypto">₿ Crypto</option>
@@ -334,145 +299,102 @@ export default function MarketplacePage() {
             </select>
           </div>
 
-          {/* Pair Filter */}
-          <div className={`rounded-xl p-3 sm:p-4 ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`}>
-            <label className={`block text-xs sm:text-sm mb-2 flex items-center gap-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+          {/* Signal Type */}
+          <div className={filterCard}>
+            <label className={`block text-sm mb-2 flex items-center gap-1 ${subtext}`}>
               <Icon icon={Icons.ExchangeAlt} size={14} />
-              Trading Pair
+              Signal Type
             </label>
-            <select
-              value={selectedPair}
-              onChange={(e) => setSelectedPair(e.target.value)}
-              className={`w-full px-2 py-1.5 sm:px-3 sm:py-2 text-sm rounded-lg border ${
-                darkMode 
-                  ? 'bg-gray-700 border-gray-600 text-white' 
-                  : 'bg-white border-gray-300 text-gray-800'
-              } focus:outline-none focus:border-orange-500`}
-            >
-              {getUniquePairs().map(pair => (
-                <option key={pair} value={pair}>
-                  {pair === 'all' ? '🔀 All Pairs' : pair}
-                </option>
-              ))}
+            <select value={signalType} onChange={(e) => setSignalType(e.target.value)} className={selectClass}>
+              <option value="all">All Types</option>
+              <option value="buy">📈 Buy</option>
+              <option value="sell">📉 Sell</option>
             </select>
+          </div>
+
+          {/* Price Range */}
+          <div className={filterCard}>
+            <label className={`block text-sm mb-3 flex items-center gap-1 ${subtext}`}>
+              <Icon icon={Icons.Dollar} size={14} />
+              Price Range: ${priceRange.min} - ${priceRange.max}
+            </label>
+            <input
+              type="range"
+              min="0"
+              max="50"
+              value={priceRange.max}
+              onChange={(e) => setPriceRange({ ...priceRange, max: parseInt(e.target.value) })}
+              className="w-full accent-orange-500"
+            />
+            <div className={`flex justify-between text-xs mt-1 ${subtext}`}>
+              <span>Free</span>
+              <span>$50</span>
+            </div>
           </div>
 
           {/* Sort By */}
-          <div className={`rounded-xl p-3 sm:p-4 ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`}>
-            <label className={`block text-xs sm:text-sm mb-2 flex items-center gap-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+          <div className={filterCard}>
+            <label className={`block text-sm mb-2 flex items-center gap-1 ${subtext}`}>
               <Icon icon={Icons.Sort} size={14} />
               Sort By
             </label>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className={`w-full px-2 py-1.5 sm:px-3 sm:py-2 text-sm rounded-lg border ${
-                darkMode 
-                  ? 'bg-gray-700 border-gray-600 text-white' 
-                  : 'bg-white border-gray-300 text-gray-800'
-              } focus:outline-none focus:border-orange-500`}
-            >
+            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className={selectClass}>
               <option value="latest">🕐 Latest First</option>
+              <option value="oldest">🕐 Oldest First</option>
               <option value="price_low">💰 Price: Low to High</option>
               <option value="price_high">💰 Price: High to Low</option>
-              <option value="rating">⭐ Highest Rated</option>
             </select>
           </div>
 
-          {/* Reset Button */}
+          {/* Reset */}
           <button
             onClick={resetFilters}
             className="w-full bg-gray-500 hover:bg-gray-600 text-white py-2 rounded-lg text-sm flex items-center justify-center gap-2"
           >
             <Icon icon={Icons.Reset} size={14} />
-            Reset All Filters
+            Reset Filters
           </button>
         </div>
 
-        {/* Main Content Area */}
-        <div className="flex-1 space-y-6">
-          {/* Trending Signals - Horizontal scroll on mobile */}
-          <TrendingSignals
-            signals={trendingSignals}
-            onSelectSignal={handleTrendingSelect}
-            darkMode={darkMode}
-          />
+        {/* Signals Grid */}
+        <div className="flex-1 space-y-4">
+          <p className={`text-sm flex items-center gap-1 ${subtext}`}>
+            <Icon icon={Icons.Info} size={12} />
+            {filteredSignals.length} signals found
+          </p>
 
-          {/* Top Providers Banner - Horizontal scroll on mobile */}
-          {topProviders.length > 0 && (
-            <div className={`rounded-xl p-3 sm:p-4 ${darkMode ? 'bg-gradient-to-r from-orange-600/20 to-red-600/20 border border-orange-500/30' : 'bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200'}`}>
-              <h3 className={`font-semibold mb-2 sm:mb-3 flex items-center gap-2 text-sm sm:text-base ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                <Icon icon={Icons.Trophy} size={16} color="#eab308" />
-                Top Rated Providers This Week
-              </h3>
-              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin">
-                {topProviders.map(provider => (
-                  <div key={provider.id} className={`rounded-lg px-3 py-1.5 sm:px-4 sm:py-2 min-w-[140px] sm:min-w-[160px] ${darkMode ? 'bg-gray-800/80' : 'bg-white shadow-sm'}`}>
-                    <p className={`font-medium text-sm ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                      {provider.full_name}
-                    </p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Icon icon={Icons.Star} size={10} color="#eab308" />
-                      <span className="text-yellow-400 text-xs">{provider.rating.toFixed(1)}</span>
-                      <span className="text-green-400 text-xs">{provider.win_rate}%</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Results Count */}
-          <div className="flex justify-between items-center">
-            <p className={`text-xs sm:text-sm flex items-center gap-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-              <Icon icon={Icons.Info} size={12} />
-              {filteredSignals.length} signals found
-            </p>
-          </div>
-
-          {/* Signals Grid - Responsive grid */}
           {displayedSignals.length === 0 ? (
             <div className={`text-center py-12 rounded-xl ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`}>
-              <Icon icon={Icons.Search} size={40} color={darkMode ? '#6b7280' : '#9ca3af'} className="mx-auto mb-4" />
-              <p className={`text-base ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                No signals found for the selected filters.
-              </p>
-              <button
-                onClick={resetFilters}
-                className="mt-4 text-orange-500 hover:underline inline-flex items-center gap-1 text-sm"
-              >
-                <Icon icon={Icons.Close} size={14} />
+              <p className="text-4xl mb-4">📭</p>
+              <p className={subtext}>No signals found for the selected filters.</p>
+              <button onClick={resetFilters} className="mt-4 text-orange-500 hover:underline text-sm">
                 Clear filters
               </button>
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {displayedSignals.map(signal => (
-                  <div key={signal.id} id={`signal-${signal.id}`}>
-                    <SignalCard 
-                      signal={signal} 
-                      darkMode={darkMode}
-                      onBuy={() => handleBuyClick(signal)}
-                      user={user}
-                    />
-                  </div>
+                  <SignalCard
+                    key={signal.id}
+                    signal={signal}
+                    darkMode={darkMode}
+                    onBuy={() => handleBuyClick(signal)}
+                    user={user}
+                  />
                 ))}
               </div>
-              
-              {/* Load More Button */}
+
               {hasMore && (
                 <div className="flex justify-center py-4">
                   <button
-                    onClick={loadMoreSignals}
-                    className={`px-4 sm:px-6 py-2 rounded-lg text-sm flex items-center gap-2 ${
-                      darkMode 
-                        ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' 
-                        : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                    onClick={loadMore}
+                    className={`px-6 py-2 rounded-lg text-sm flex items-center gap-2 ${
+                      darkMode ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
                     }`}
                   >
                     <Icon icon={Icons.ChevronDown} size={14} />
-                    Load More Signals
+                    Load More
                   </button>
                 </div>
               )}
@@ -481,83 +403,77 @@ export default function MarketplacePage() {
         </div>
       </div>
 
-      {/* Signal Compare Component */}
-      <SignalCompare
-        signals={filteredSignals}
-        onBuy={handleBuyClick}
-        darkMode={darkMode}
-      />
-
-      {/* Buy Modal - Responsive */}
+      {/* Buy Modal */}
       {showBuyModal && selectedSignal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className={`max-w-md w-full rounded-xl ${darkMode ? 'bg-gray-800' : 'bg-white'} p-4 sm:p-6`}>
+          <div className={`max-w-md w-full rounded-xl ${darkMode ? 'bg-gray-800' : 'bg-white'} p-6`}>
             <div className="flex justify-between items-center mb-4">
-              <h2 className={`text-lg sm:text-xl font-bold flex items-center gap-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+              <h2 className={`text-xl font-bold flex items-center gap-2 ${text}`}>
                 <Icon icon={Icons.ShoppingCart} size={18} />
                 Confirm Purchase
               </h2>
-              <button onClick={() => setShowBuyModal(false)} className="text-gray-500">
-                <Icon icon={Icons.Close} size={18} />
+              <button onClick={() => setShowBuyModal(false)}>
+                <Icon icon={Icons.Close} size={18} className={subtext} />
               </button>
             </div>
-            
-            <div className={`p-3 sm:p-4 rounded-lg mb-4 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+
+            {buyError && (
+              <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg mb-4 text-sm">
+                {buyError}
+              </div>
+            )}
+
+            <div className={`p-4 rounded-lg mb-4 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
               <div className="flex justify-between mb-2 text-sm">
-                <span className={darkMode ? 'text-gray-400' : 'text-gray-500'}>Signal:</span>
-                <span className={`font-semibold flex items-center gap-1 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                  <Icon icon={Icons.Chart} size={12} />
-                  {selectedSignal.pair}
+                <span className={subtext}>Signal:</span>
+                <span className={`font-semibold ${text}`}>{selectedSignal.title || selectedSignal.asset}</span>
+              </div>
+              <div className="flex justify-between mb-2 text-sm">
+                <span className={subtext}>Asset:</span>
+                <span className={`font-semibold ${text}`}>{selectedSignal.asset}</span>
+              </div>
+              <div className="flex justify-between mb-2 text-sm">
+                <span className={subtext}>Type:</span>
+                <span className={`font-semibold capitalize ${selectedSignal.signal_type === 'buy' ? 'text-green-500' : 'text-red-500'}`}>
+                  {selectedSignal.signal_type}
                 </span>
               </div>
               <div className="flex justify-between mb-2 text-sm">
-                <span className={darkMode ? 'text-gray-400' : 'text-gray-500'}>Provider:</span>
-                <span className={`font-semibold flex items-center gap-1 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                  <Icon icon={Icons.User} size={12} />
-                  {selectedSignal.provider_name}
-                </span>
+                <span className={subtext}>Provider:</span>
+                <span className={`font-semibold ${text}`}>{selectedSignal.profiles?.full_name}</span>
               </div>
-              <div className="flex justify-between mb-2 text-sm">
-                <span className={darkMode ? 'text-gray-400' : 'text-gray-500'}>Price:</span>
-                <span className="text-orange-500 font-bold flex items-center gap-1">
-                  <Icon icon={Icons.Dollar} size={12} />
-                  ${selectedSignal.price}
+              <div className="flex justify-between text-sm">
+                <span className={subtext}>Price:</span>
+                <span className="text-orange-500 font-bold">
+                  {selectedSignal.is_free ? 'Free' : `$${selectedSignal.price}`}
                 </span>
               </div>
             </div>
 
-            <div className={`text-xs sm:text-sm mb-4 p-2 sm:p-3 rounded-lg flex items-center gap-2 ${darkMode ? 'bg-yellow-500/10 text-yellow-400' : 'bg-yellow-50 text-yellow-600'}`}>
+            <div className={`text-xs mb-4 p-3 rounded-lg flex items-center gap-2 ${darkMode ? 'bg-yellow-500/10 text-yellow-400' : 'bg-yellow-50 text-yellow-600'}`}>
               <Icon icon={Icons.Flash} size={12} />
               Full analysis revealed immediately after purchase.
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex gap-3">
               <button
                 onClick={handleConfirmPurchase}
                 disabled={buying}
                 className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-lg transition disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
               >
-                {buying ? (
-                  <>
-                    <Icon icon={Icons.Settings} size={14} spin={true} />
-                    Processing...
-                  </>
-                ) : (
+                {buying ? 'Processing...' : (
                   <>
                     <Icon icon={Icons.Check} size={14} />
-                    Confirm - ${selectedSignal.price}
+                    Confirm — {selectedSignal.is_free ? 'Free' : `$${selectedSignal.price}`}
                   </>
                 )}
               </button>
               <button
                 onClick={() => setShowBuyModal(false)}
-                className={`px-4 py-2 rounded-lg transition flex items-center justify-center gap-1 text-sm ${
-                  darkMode 
-                    ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' 
-                    : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+                className={`px-4 py-2 rounded-lg transition text-sm ${
+                  darkMode ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
                 }`}
               >
-                <Icon icon={Icons.Close} size={14} />
                 Cancel
               </button>
             </div>
@@ -568,166 +484,101 @@ export default function MarketplacePage() {
   );
 }
 
-// Responsive Signal Card Component
+// Signal Card Component
 function SignalCard({ signal, darkMode, onBuy, user }) {
-  const [purchased, setPurchased] = useState(false);
-  const [fullAnalysis, setFullAnalysis] = useState(null);
+  const text = darkMode ? 'text-white' : 'text-gray-800';
+  const subtext = darkMode ? 'text-gray-400' : 'text-gray-500';
 
-  const getMarketColor = (market) => {
-    switch(market) {
-      case 'forex': return 'bg-green-500/20 text-green-500';
-      case 'crypto': return 'bg-orange-500/20 text-orange-500';
-      case 'stocks': return 'bg-blue-500/20 text-blue-500';
-      default: return 'bg-gray-500/20 text-gray-500';
-    }
+  const getMarketColor = (asset) => {
+    const a = asset?.toLowerCase();
+    if (['btc', 'eth', 'sol', 'bnb', 'doge', 'xrp'].some(c => a?.includes(c))) return 'bg-orange-500/20 text-orange-500';
+    if (['aapl', 'nvda', 'tsla', 'msft', 'amzn', 'googl'].some(c => a?.includes(c))) return 'bg-blue-500/20 text-blue-500';
+    return 'bg-green-500/20 text-green-500';
   };
-
-  const getMarketIcon = (market) => {
-    switch(market) {
-      case 'forex': return Icons.ExchangeAlt;
-      case 'crypto': return Icons.Bitcoin;
-      case 'stocks': return Icons.ChartBar;
-      default: return Icons.Chart;
-    }
-  };
-
-  const handleLocalBuy = () => {
-    onBuy();
-    if (window.confirm('Demo: Reveal full analysis?')) {
-      setFullAnalysis(signal.analysis_full || 'Detailed analysis including technical indicators, support/resistance levels, and risk management tips for this trade setup.');
-      setPurchased(true);
-    }
-  };
-
-  if (purchased && fullAnalysis) {
-    return (
-      <div className={`rounded-xl border-2 border-green-500/50 overflow-hidden ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`}>
-        <div className="p-4">
-          <div className="flex justify-between items-start mb-3">
-            <div>
-              <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded ${getMarketColor(signal.market)}`}>
-                <Icon icon={getMarketIcon(signal.market)} size={10} />
-                {signal.market.toUpperCase()}
-              </span>
-              <p className={`font-bold text-base mt-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                {signal.pair}
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-xl font-bold text-green-500">${signal.price}</p>
-              <p className="text-xs text-gray-500 flex items-center justify-end gap-1">
-                <Icon icon={Icons.Check} size={8} /> purchased
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3 mb-3">
-            <p className="text-green-400 text-xs font-semibold mb-1 flex items-center gap-1">
-              <Icon icon={Icons.Info} size={12} />
-              Full Analysis:
-            </p>
-            <p className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-              {fullAnalysis}
-            </p>
-          </div>
-
-          <div className="text-center text-green-400 text-xs font-semibold py-1 flex items-center justify-center gap-1">
-            <Icon icon={Icons.Check} size={12} />
-            Purchased
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className={`rounded-xl border ${darkMode ? 'bg-gray-800 border-gray-700 hover:border-orange-500/50' : 'bg-white shadow-lg border-gray-200 hover:shadow-xl'} transition-all duration-300 overflow-hidden`}>
+    <div className={`rounded-xl border transition-all duration-300 overflow-hidden ${
+      darkMode ? 'bg-gray-800 border-gray-700 hover:border-orange-500/50' : 'bg-white shadow-lg border-gray-200 hover:shadow-xl'
+    }`}>
       <div className="p-4">
-        <div className="flex justify-between items-start mb-2">
+        {/* Header */}
+        <div className="flex justify-between items-start mb-3">
           <div>
-            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-xs font-semibold rounded ${getMarketColor(signal.market)}`}>
-              <Icon icon={getMarketIcon(signal.market)} size={10} />
-              {signal.market.toUpperCase()}
+            <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded ${getMarketColor(signal.asset)}`}>
+              <Icon icon={Icons.Chart} size={10} />
+              {signal.asset}
             </span>
-            <p className={`font-bold text-base mt-1 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-              {signal.pair}
+            <p className={`font-bold text-base mt-1 ${text}`}>
+              {signal.title || signal.asset}
             </p>
           </div>
           <div className="text-right">
-            <p className="text-xl font-bold text-orange-500">${signal.price}</p>
-            <p className="text-xs text-gray-500">per signal</p>
+            <p className="text-xl font-bold text-orange-500">
+              {signal.is_free ? 'Free' : `$${signal.price}`}
+            </p>
+            <p className={`text-xs ${subtext}`}>per signal</p>
           </div>
         </div>
 
+        {/* Provider */}
         <div className="flex items-center justify-between mb-3 text-xs">
           <div className="flex items-center gap-1">
             <Icon icon={Icons.User} size={10} />
-            <span className={darkMode ? 'text-gray-400' : 'text-gray-500'}>Provider:</span>
-            <span className={`font-medium ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-              {signal.provider_name}
-            </span>
+            <span className={subtext}>Provider:</span>
+            <span className={`font-medium ${text}`}>{signal.profiles?.full_name || 'Unknown'}</span>
           </div>
-          <div className="flex items-center gap-0.5">
-            <Icon icon={Icons.Star} size={10} color="#eab308" />
-            <span className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
-              {signal.provider_rating}
-            </span>
-          </div>
+          <span className={`px-2 py-0.5 rounded-full text-xs ${
+            signal.signal_type === 'buy' ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'
+          }`}>
+            {signal.signal_type?.toUpperCase()}
+          </span>
         </div>
 
+        {/* Entry, TP, SL */}
         <div className={`rounded-lg p-2 mb-3 ${darkMode ? 'bg-gray-700/50' : 'bg-gray-50'}`}>
           <div className="grid grid-cols-3 gap-1 text-center text-xs">
             <div>
-              <p className={darkMode ? 'text-gray-400' : 'text-gray-500'}>Entry</p>
-              <p className={`font-mono font-semibold text-xs ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                {signal.entry}
-              </p>
+              <p className={subtext}>Entry</p>
+              <p className={`font-mono font-semibold ${text}`}>{signal.entry_price || '—'}</p>
             </div>
             <div>
-              <p className={darkMode ? 'text-gray-400' : 'text-gray-500'}>TP</p>
-              <p className="font-mono font-semibold text-green-500 text-xs">
-                {signal.tp}
-              </p>
+              <p className={subtext}>TP</p>
+              <p className="font-mono font-semibold text-green-500">{signal.target_price || '—'}</p>
             </div>
             <div>
-              <p className={darkMode ? 'text-gray-400' : 'text-gray-500'}>SL</p>
-              <p className="font-mono font-semibold text-red-500 text-xs">
-                {signal.sl}
-              </p>
+              <p className={subtext}>SL</p>
+              <p className="font-mono font-semibold text-red-500">{signal.stop_loss || '—'}</p>
             </div>
           </div>
         </div>
 
-        {signal.purchases > 50 && (
-          <div className="absolute top-2 right-2">
-            <div className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
-              <Icon icon={Icons.Fire} size={8} />
-              Hot
-            </div>
+        {/* Timeframe */}
+        {signal.timeframe && (
+          <div className={`text-xs mb-3 flex items-center gap-1 ${subtext}`}>
+            <Icon icon={Icons.Clock} size={10} />
+            Timeframe: {signal.timeframe}
           </div>
         )}
 
-        <div className={`text-center mb-3 text-[10px] flex items-center justify-center gap-1 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-          <Icon icon={Icons.Lock} size={8} />
+        <div className={`text-center mb-3 text-xs flex items-center justify-center gap-1 ${subtext}`}>
+          <Icon icon={Icons.Lock} size={10} />
           Full analysis after purchase
         </div>
 
         <button
-          onClick={handleLocalBuy}
-          className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-1.5 rounded-lg transition text-sm flex items-center justify-center gap-1"
+          onClick={onBuy}
+          className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-lg transition text-sm flex items-center justify-center gap-1"
         >
           <Icon icon={Icons.Dollar} size={12} color="white" />
-          Buy - ${signal.price}
+          {signal.is_free ? 'Get Free' : `Buy — $${signal.price}`}
         </button>
 
-        <div className={`flex justify-between mt-2 pt-2 border-t text-[10px] ${darkMode ? 'border-gray-700 text-gray-500' : 'border-gray-100 text-gray-400'}`}>
-          <span className="flex items-center gap-0.5">
-            <Icon icon={Icons.Chart} size={8} />
-            {signal.purchases || 42} buys
-          </span>
-          <span className="flex items-center gap-0.5">
-            <Icon icon={Icons.Star} size={8} color="#eab308" />
-            {signal.likes || 89}% liked
+        <div className={`flex justify-between mt-2 pt-2 border-t text-xs ${
+          darkMode ? 'border-gray-700 text-gray-500' : 'border-gray-100 text-gray-400'
+        }`}>
+          <span>{new Date(signal.created_at).toLocaleDateString()}</span>
+          <span className={`capitalize ${signal.status === 'active' ? 'text-green-500' : 'text-gray-400'}`}>
+            {signal.status}
           </span>
         </div>
       </div>

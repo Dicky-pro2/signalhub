@@ -1,19 +1,15 @@
-// src/pages/ResetPassword.jsx
 import { useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
-import { useTheme } from '../context/ThemeContext';
-import Icon from '../components/Icon';
-import { Icons } from '../components/Icons';
+import { Link, useNavigate } from 'react-router-dom';
+import { supabase } from '../config/supabase';
 
 export default function ResetPassword() {
-  const { token } = useParams();
-  const navigate = useNavigate();
-  const { darkMode } = useTheme();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -23,100 +19,107 @@ export default function ResetPassword() {
       setError('Password must be at least 6 characters');
       return;
     }
-
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       return;
     }
 
     setLoading(true);
-
-    // Simulate API call - replace with actual
-    setTimeout(() => {
+    try {
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw error;
       setSuccess(true);
+      setTimeout(() => navigate('/signin', {
+        state: { message: 'Password updated successfully! Please sign in.' }
+      }), 2000);
+    } catch (err) {
+      setError(err.message || 'Failed to reset password');
+    } finally {
       setLoading(false);
-      setTimeout(() => navigate('/signin'), 3000);
-    }, 1000);
+    }
   };
 
   if (success) {
     return (
-      <div className={`min-h-screen flex items-center justify-center px-4 ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-        <div className={`max-w-md w-full p-8 rounded-xl text-center ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`}>
-          <Icon icon={Icons.Success} size={48} className="mx-auto mb-4 text-green-500" />
-          <h2 className={`text-xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-            Password Reset Successfully!
-          </h2>
-          <p className={`text-sm mb-4 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-            Redirecting you to sign in...
-          </p>
+      <div className="min-h-screen flex items-center justify-center px-4 bg-gray-950">
+        <div className="max-w-md w-full p-8 rounded-2xl bg-gray-900 border border-gray-800 text-center">
+          <div className="text-5xl mb-4">✅</div>
+          <h2 className="text-xl font-bold mb-2 text-white">Password Reset!</h2>
+          <p className="text-sm text-gray-400">Redirecting you to sign in...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`min-h-screen flex items-center justify-center px-4 ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      <div className={`max-w-md w-full p-8 rounded-xl ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`}>
-        <div className="text-center mb-6">
-          <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-            Create New Password
-          </h1>
-          <p className={`text-sm mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-            Enter your new password below
-          </p>
+    <div className="min-h-screen flex items-center justify-center px-4 bg-gray-950">
+      <div className="max-w-md w-full">
+
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <div className="text-3xl font-bold">
+            <span className="text-white">Signal</span>
+            <span className="text-orange-500">Hub</span>
+          </div>
+          <h2 className="text-2xl font-bold mt-6 text-white">Create New Password</h2>
+          <p className="mt-2 text-gray-400">Enter your new password below</p>
         </div>
 
-        {error && (
-          <div className="bg-red-500/10 border border-red-500 text-red-500 px-4 py-2 rounded-lg mb-4 text-sm">
-            {error}
-          </div>
-        )}
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8">
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg mb-6 text-sm">
+              {error}
+            </div>
+          )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className={`block text-sm mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-              New Password
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className={`w-full px-4 py-2 rounded-lg border focus:outline-none focus:border-orange-500 ${
-                darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
-              }`}
-              required
-            />
-          </div>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">New Password</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="new-password"
+                  className="w-full px-4 py-3 pr-12 rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500 transition"
+                  placeholder="••••••••"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-orange-500 transition text-sm"
+                >
+                  {showPassword ? 'Hide' : 'Show'}
+                </button>
+              </div>
+            </div>
 
-          <div>
-            <label className={`block text-sm mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-              Confirm New Password
-            </label>
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className={`w-full px-4 py-2 rounded-lg border focus:outline-none focus:border-orange-500 ${
-                darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
-              }`}
-              required
-            />
-          </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">Confirm New Password</label>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                autoComplete="new-password"
+                className="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500 transition"
+                placeholder="••••••••"
+                required
+              />
+            </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2 rounded-lg transition disabled:opacity-50"
-          >
-            {loading ? 'Resetting...' : 'Reset Password'}
-          </button>
-        </form>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 rounded-lg transition disabled:opacity-50"
+            >
+              {loading ? 'Updating...' : 'Reset Password'}
+            </button>
+          </form>
 
-        <div className="text-center mt-4">
-          <Link to="/signin" className={`text-sm ${darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-700'}`}>
-            ← Back to Sign In
-          </Link>
+          <p className="text-center mt-6 text-gray-400 text-sm">
+            <Link to="/signin" className="text-orange-500 hover:underline">← Back to Sign In</Link>
+          </p>
         </div>
       </div>
     </div>
