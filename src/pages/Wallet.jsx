@@ -20,17 +20,25 @@ export default function Wallet() {
     fetchWalletData();
   }, [user]);
 
+  // Load Paystack script dynamically
+  useEffect(() => {
+    if (document.getElementById('paystack-script')) return;
+    const script = document.createElement('script');
+    script.id = 'paystack-script';
+    script.src = 'https://js.paystack.co/v1/inline.js';
+    script.async = true;
+    document.head.appendChild(script);
+  }, []);
+
   const fetchWalletData = async () => {
     setLoading(true);
     try {
-      // Fetch wallet
       const { data: walletData } = await supabase
         .from('wallets')
         .select('*')
         .eq('user_id', user.id)
         .single();
 
-      // Fetch transactions
       const { data: txData } = await supabase
         .from('transactions')
         .select('*')
@@ -45,90 +53,77 @@ export default function Wallet() {
       setLoading(false);
     }
   };
-// Handle Paystack deposit flow
-  const handlePaystackDeposit = async (e) => {
-  e.preventDefault();
-  setError('');
-  setSuccess('');
 
-  const amount = parseFloat(depositAmount);
-  if (amount < 10) {
-    setError('Minimum deposit is $10');
-    return;
-  }
-
-  setDepositing(true);
-
-  const handler = window.PaystackPop?.setup({
-    key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY,
-    email: user.email,
-    amount: amount * 100,
-    currency: 'NGN',
-    ref: `DEP-${Date.now()}-${user.id.slice(0, 8)}`,
-    onClose: () => {
-      setDepositing(false);
-    },
-
-    // ✅ THIS IS WHERE THE CALLBACK GOES
-    callback: async (response) => {
-      try {
-        // Call edge function to verify payment server-side
-        const { data, error } = await supabase.functions.invoke('verify-payment', {
-          body: {
-            reference: response.reference,
-            userId: user.id,
-            amount,
-          },
-        });
-
-        if (error || !data.success) {
-          setError('Payment verification failed. Contact support.');
-          return;
-        }
-
-        setSuccess(`$${amount.toFixed(2)} added to your wallet!`);
-        setDepositAmount('');
-        fetchWalletData();
-      } catch (err) {
-        setError('Payment received but verification failed. Contact support.');
-      } finally {
-        setDepositing(false);
-      }
-    },
-  });
-
-  if (handler) {
-    handler.openIframe();
-  } else {
-    // Dev mode fallback when Paystack script not loaded
+  const verifyAndCredit = async (reference, amount, devMode = false) => {
     try {
       const { data, error } = await supabase.functions.invoke('verify-payment', {
-        body: {
-          reference: `DEV-${Date.now()}`,
-          userId: user.id,
-          amount,
-          devMode: true,
-        },
+        body: { reference, userId: user.id, amount, devMode },
       });
 
-      if (error) throw error;
-      setSuccess(`$${amount.toFixed(2)} added (dev mode)`);
+      if (error) throw new Error(error.message);
+      if (!data?.success) throw new Error('Verification failed');
+
+      setSuccess(`$${amount.toFixed(2)} added to your wallet!`);
       setDepositAmount('');
       fetchWalletData();
     } catch (err) {
-      setError('Failed to process deposit');
+      setError(err.message || 'Payment received but verification failed. Contact support.');
     } finally {
       setDepositing(false);
     }
-  }
-};
+  };
+
+  const handlePaystackDeposit = (e) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    const amount = parseFloat(depositAmount);
+    if (!amount || amount < 10) {
+      setError('Minimum deposit is $10');
+      return;
+    }
+
+    setDepositing(true);
+
+    // If Paystack not loaded, use dev mode
+    if (!window.PaystackPop) {
+      verifyAndCredit(`DEV-${Date.now()}`, amount, true);
+      return;
+    }
+
+    try {
+      const handler = window.PaystackPop.setup({
+        key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY,
+        email: user.email,
+        amount: Math.round(amount * 100),
+        currency: 'NGN',
+        ref: `DEP-${Date.now()}-${user.id.slice(0, 8)}`,
+        callback: function(response) {
+          verifyAndCredit(response.reference, amount);
+        },
+        onClose: function() {
+          setDepositing(false);
+        },
+      });
+      handler.openIframe();
+    } catch (err) {
+      setError('Failed to open payment. Please try again.');
+      setDepositing(false);
+    }
+  };
 
   const text = darkMode ? 'text-white' : 'text-gray-800';
   const subtext = darkMode ? 'text-gray-400' : 'text-gray-500';
-  const card = `rounded-xl p-6 ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`;
-  const input = `flex-1 px-4 py-2 rounded-lg border focus:outline-none focus:border-orange-500 ${
-    darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-800'
-  }`;
+  const card = `rounded-xl p-4 sm:p-6 ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`;
+
+  const totalSpent = transactions
+    .filter(t => t.type === 'subscription' && t.status === 'success')
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const totalDeposited = transactions
+    .filter(t => t.type === 'deposit' && t.status === 'success')
+    .reduce((sum, t) => sum + t.amount, 0);
 
   if (loading) {
     return (
@@ -139,11 +134,11 @@ export default function Wallet() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <div>
-        <h1 className={`text-2xl font-bold ${text}`}>Wallet</h1>
-        <p className={subtext}>Manage your funds and transaction history</p>
+        <h1 className={`text-xl sm:text-2xl font-bold ${text}`}>Wallet</h1>
+        <p className={`text-sm ${subtext}`}>Manage your funds and transaction history</p>
       </div>
 
       {error && (
@@ -158,49 +153,38 @@ export default function Wallet() {
       )}
 
       {/* Balance Card */}
-      <div className={`rounded-xl p-6 ${
+      <div className={`rounded-xl p-4 sm:p-6 ${
         darkMode
           ? 'bg-gradient-to-r from-orange-600/20 to-red-600/20 border border-orange-500/30'
           : 'bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200'
       }`}>
         <div className="text-center">
           <p className={`text-sm ${subtext}`}>Current Balance</p>
-          <p className="text-5xl font-bold text-orange-500 mt-2">
+          <p className="text-4xl sm:text-5xl font-bold text-orange-500 mt-2">
             ${(wallet?.balance || 0).toFixed(2)}
           </p>
 
-          {/* Extra stats */}
-          <div className="grid grid-cols-2 gap-4 mt-6 max-w-sm mx-auto">
-            <div className={`rounded-lg p-3 ${darkMode ? 'bg-gray-800/50' : 'bg-white/70'}`}>
+          <div className="grid grid-cols-2 gap-3 mt-4 sm:mt-6 max-w-xs sm:max-w-sm mx-auto">
+            <div className={`rounded-lg p-2 sm:p-3 ${darkMode ? 'bg-gray-800/50' : 'bg-white/70'}`}>
               <p className={`text-xs ${subtext}`}>Total Spent</p>
-              <p className={`font-bold ${text}`}>
-                ${transactions
-                  .filter(t => t.type === 'subscription' && t.status === 'success')
-                  .reduce((sum, t) => sum + t.amount, 0)
-                  .toFixed(2)}
-              </p>
+              <p className={`font-bold text-sm sm:text-base ${text}`}>${totalSpent.toFixed(2)}</p>
             </div>
-            <div className={`rounded-lg p-3 ${darkMode ? 'bg-gray-800/50' : 'bg-white/70'}`}>
+            <div className={`rounded-lg p-2 sm:p-3 ${darkMode ? 'bg-gray-800/50' : 'bg-white/70'}`}>
               <p className={`text-xs ${subtext}`}>Total Deposited</p>
-              <p className={`font-bold ${text}`}>
-                ${transactions
-                  .filter(t => t.type === 'deposit' && t.status === 'success')
-                  .reduce((sum, t) => sum + t.amount, 0)
-                  .toFixed(2)}
-              </p>
+              <p className={`font-bold text-sm sm:text-base ${text}`}>${totalDeposited.toFixed(2)}</p>
             </div>
           </div>
 
-          <div className="flex gap-3 justify-center mt-6">
+          <div className="flex gap-3 justify-center mt-4 sm:mt-6">
             <button
               onClick={() => setActiveTab('deposit')}
-              className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg transition"
+              className="bg-orange-500 hover:bg-orange-600 text-white px-4 sm:px-6 py-2 rounded-lg transition text-sm sm:text-base"
             >
               + Deposit
             </button>
             <button
               onClick={() => setActiveTab('overview')}
-              className={`px-6 py-2 rounded-lg transition ${
+              className={`px-4 sm:px-6 py-2 rounded-lg transition text-sm sm:text-base ${
                 darkMode ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-800'
               }`}
             >
@@ -216,7 +200,7 @@ export default function Wallet() {
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 rounded-lg transition capitalize ${
+            className={`px-3 sm:px-4 py-2 rounded-lg transition text-sm capitalize ${
               activeTab === tab
                 ? 'bg-orange-500 text-white'
                 : darkMode
@@ -232,30 +216,32 @@ export default function Wallet() {
       {/* Deposit Tab */}
       {activeTab === 'deposit' && (
         <div className={card}>
-          <h2 className={`text-xl font-bold mb-4 ${text}`}>Add Funds</h2>
+          <h2 className={`text-lg sm:text-xl font-bold mb-4 ${text}`}>Add Funds</h2>
 
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Deposit Methods Info */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Deposit Methods */}
             <div>
-              <h3 className={`font-semibold mb-3 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+              <h3 className={`font-semibold mb-3 text-sm sm:text-base ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                 Deposit Methods
               </h3>
               <div className="space-y-2">
-                <div className={`w-full p-3 rounded-lg border ${darkMode ? 'border-orange-500 bg-orange-500/10' : 'border-orange-500 bg-orange-50'}`}>
+                <div className={`p-3 rounded-lg border ${darkMode ? 'border-orange-500 bg-orange-500/10' : 'border-orange-500 bg-orange-50'}`}>
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">💳</span>
-                    <div>
-                      <p className={`font-medium ${text}`}>Paystack</p>
+                    <span className="text-xl sm:text-2xl">💳</span>
+                    <div className="flex-1 min-w-0">
+                      <p className={`font-medium text-sm sm:text-base ${text}`}>Paystack</p>
                       <p className={`text-xs ${subtext}`}>Card, Bank Transfer, USSD</p>
                     </div>
-                    <span className="ml-auto text-xs bg-green-500/20 text-green-500 px-2 py-1 rounded-full">Active</span>
+                    <span className="text-xs bg-green-500/20 text-green-500 px-2 py-1 rounded-full whitespace-nowrap">
+                      Active
+                    </span>
                   </div>
                 </div>
-                <div className={`w-full p-3 rounded-lg border ${darkMode ? 'border-gray-700' : 'border-gray-200'} opacity-50`}>
+                <div className={`p-3 rounded-lg border opacity-50 ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">₿</span>
+                    <span className="text-xl sm:text-2xl">₿</span>
                     <div>
-                      <p className={`font-medium ${text}`}>Cryptocurrency</p>
+                      <p className={`font-medium text-sm sm:text-base ${text}`}>Cryptocurrency</p>
                       <p className={`text-xs ${subtext}`}>Coming soon</p>
                     </div>
                   </div>
@@ -266,18 +252,17 @@ export default function Wallet() {
             {/* Deposit Form */}
             <div>
               <form onSubmit={handlePaystackDeposit}>
-                <label className={`block mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                <label className={`block mb-2 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                   Amount (USD)
                 </label>
 
-                {/* Quick amounts */}
                 <div className="grid grid-cols-4 gap-2 mb-3">
                   {[10, 25, 50, 100].map(amt => (
                     <button
                       key={amt}
                       type="button"
                       onClick={() => setDepositAmount(String(amt))}
-                      className={`py-1.5 rounded-lg text-sm transition ${
+                      className={`py-1.5 rounded-lg text-xs sm:text-sm transition ${
                         depositAmount === String(amt)
                           ? 'bg-orange-500 text-white'
                           : darkMode
@@ -290,7 +275,7 @@ export default function Wallet() {
                   ))}
                 </div>
 
-                <div className="flex gap-3">
+                <div className="flex gap-2 sm:gap-3">
                   <input
                     type="number"
                     value={depositAmount}
@@ -299,12 +284,16 @@ export default function Wallet() {
                     min="10"
                     step="1"
                     required
-                    className={input}
+                    className={`flex-1 px-3 sm:px-4 py-2 rounded-lg border focus:outline-none focus:border-orange-500 text-sm ${
+                      darkMode
+                        ? 'bg-gray-700 border-gray-600 text-white'
+                        : 'bg-white border-gray-300 text-gray-800'
+                    }`}
                   />
                   <button
                     type="submit"
                     disabled={depositing || !depositAmount || parseFloat(depositAmount) < 10}
-                    className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg transition disabled:opacity-50 whitespace-nowrap"
+                    className="bg-orange-500 hover:bg-orange-600 text-white px-3 sm:px-6 py-2 rounded-lg transition disabled:opacity-50 whitespace-nowrap text-sm"
                   >
                     {depositing ? 'Processing...' : 'Deposit'}
                   </button>
@@ -324,10 +313,10 @@ export default function Wallet() {
         </div>
       )}
 
-      {/* Overview / Transaction History */}
+      {/* Transaction History */}
       {activeTab === 'overview' && (
         <div className={card}>
-          <h2 className={`text-xl font-bold mb-4 ${text}`}>Transaction History</h2>
+          <h2 className={`text-lg sm:text-xl font-bold mb-4 ${text}`}>Transaction History</h2>
 
           {transactions.length === 0 ? (
             <div className="text-center py-8">
@@ -335,43 +324,50 @@ export default function Wallet() {
               <p className={subtext}>No transactions yet</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className={subtext}>
-                  <tr className={`border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                    <th className="text-left py-2">Date</th>
-                    <th className="text-left py-2">Description</th>
-                    <th className="text-left py-2">Amount</th>
-                    <th className="text-left py-2">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {transactions.map((tx) => (
-                    <tr key={tx.id} className={`border-b ${darkMode ? 'border-gray-700/50' : 'border-gray-100'}`}>
-                      <td className={`py-3 text-sm ${subtext}`}>
-                        {new Date(tx.created_at).toLocaleDateString()}
-                      </td>
-                      <td className={`py-3 ${text}`}>{tx.description}</td>
-                      <td className={`py-3 font-semibold ${
-                        tx.type === 'deposit' ? 'text-green-500' : 'text-red-500'
-                      }`}>
-                        {tx.type === 'deposit' ? '+' : '-'}₦{tx.amount?.toFixed(2)}
-                      </td>
-                      <td className="py-3">
-                        <span className={`text-xs px-2 py-1 rounded-full ${
-                          tx.status === 'success'
-                            ? 'bg-green-500/20 text-green-500'
-                            : tx.status === 'pending'
-                            ? 'bg-yellow-500/20 text-yellow-500'
-                            : 'bg-red-500/20 text-red-500'
-                        }`}>
-                          {tx.status}
-                        </span>
-                      </td>
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
+              <div className="min-w-full px-4 sm:px-0">
+                <table className="w-full">
+                  <thead className={subtext}>
+                    <tr className={`border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                      <th className="text-left py-2 text-xs sm:text-sm pr-4">Date</th>
+                      <th className="text-left py-2 text-xs sm:text-sm pr-4">Description</th>
+                      <th className="text-left py-2 text-xs sm:text-sm pr-4">Amount</th>
+                      <th className="text-left py-2 text-xs sm:text-sm">Status</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {transactions.map((tx) => (
+                      <tr
+                        key={tx.id}
+                        className={`border-b ${darkMode ? 'border-gray-700/50' : 'border-gray-100'}`}
+                      >
+                        <td className={`py-3 text-xs sm:text-sm pr-4 whitespace-nowrap ${subtext}`}>
+                          {new Date(tx.created_at).toLocaleDateString()}
+                        </td>
+                        <td className={`py-3 text-xs sm:text-sm pr-4 max-w-[140px] sm:max-w-none truncate ${text}`}>
+                          {tx.description}
+                        </td>
+                        <td className={`py-3 text-xs sm:text-sm font-semibold pr-4 whitespace-nowrap ${
+                          tx.type === 'deposit' ? 'text-green-500' : 'text-red-500'
+                        }`}>
+                          {tx.type === 'deposit' ? '+' : '-'}${tx.amount?.toFixed(2)}
+                        </td>
+                        <td className="py-3">
+                          <span className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${
+                            tx.status === 'success'
+                              ? 'bg-green-500/20 text-green-500'
+                              : tx.status === 'pending'
+                              ? 'bg-yellow-500/20 text-yellow-500'
+                              : 'bg-red-500/20 text-red-500'
+                          }`}>
+                            {tx.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>
