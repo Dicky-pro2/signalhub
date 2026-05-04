@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
-import { supabase } from '../config/supabase';
-import Icon from '../components/Icon';
-import { Icons } from '../components/Icons';
+import { useState, useEffect } from "react";
+import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
+import { supabase } from "../config/supabase";
+import Icon from "../components/Icon";
+import { Icons } from "../components/Icons";
 
 export default function MarketplacePage() {
   const { user } = useAuth();
@@ -12,19 +12,21 @@ export default function MarketplacePage() {
   const [filteredSignals, setFilteredSignals] = useState([]);
   const [displayedSignals, setDisplayedSignals] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedMarket, setSelectedMarket] = useState('all');
-  const [sortBy, setSortBy] = useState('latest');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedMarket, setSelectedMarket] = useState("all");
+  const [sortBy, setSortBy] = useState("latest");
+  const [searchQuery, setSearchQuery] = useState("");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [showBuyModal, setShowBuyModal] = useState(false);
   const [selectedSignal, setSelectedSignal] = useState(null);
   const [buying, setBuying] = useState(false);
-  const [buyError, setBuyError] = useState('');
+  const [buyError, setBuyError] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [priceRange, setPriceRange] = useState({ min: 0, max: 50 });
-  const [signalType, setSignalType] = useState('all');
+  const [signalType, setSignalType] = useState("all");
   const ITEMS_PER_PAGE = 9;
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [purchasedSignal, setPurchasedSignal] = useState(null);
 
   useEffect(() => {
     fetchSignals();
@@ -38,15 +40,15 @@ export default function MarketplacePage() {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('signals')
-        .select('*, profiles!provider_id(id, full_name, avatar_url)')
-        .eq('status', 'active')
-        .order('created_at', { ascending: false });
+        .from("signals")
+        .select("*, profiles!provider_id(id, full_name, avatar_url)")
+        .eq("status", "active")
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
       setSignals(data || []);
     } catch (err) {
-      console.error('Failed to fetch signals:', err);
+      console.error("Failed to fetch signals:", err);
     } finally {
       setLoading(false);
     }
@@ -56,23 +58,40 @@ export default function MarketplacePage() {
     let filtered = [...signals];
 
     // Market filter
-    if (selectedMarket !== 'all') {
-      filtered = filtered.filter(s => {
+    if (selectedMarket !== "all") {
+      filtered = filtered.filter((s) => {
         const asset = s.asset?.toLowerCase();
-        if (selectedMarket === 'crypto') return asset?.includes('btc') || asset?.includes('eth') || asset?.includes('sol') || asset?.includes('bnb') || asset?.includes('doge') || asset?.includes('xrp');
-        if (selectedMarket === 'forex') return asset?.includes('/') && !asset?.includes('usd/') || ['eur', 'gbp', 'jpy', 'aud', 'cad', 'nzd'].some(c => asset?.includes(c));
-        if (selectedMarket === 'stocks') return ['aapl', 'nvda', 'tsla', 'msft', 'amzn', 'googl'].some(c => asset?.includes(c));
+        if (selectedMarket === "crypto")
+          return (
+            asset?.includes("btc") ||
+            asset?.includes("eth") ||
+            asset?.includes("sol") ||
+            asset?.includes("bnb") ||
+            asset?.includes("doge") ||
+            asset?.includes("xrp")
+          );
+        if (selectedMarket === "forex")
+          return (
+            (asset?.includes("/") && !asset?.includes("usd/")) ||
+            ["eur", "gbp", "jpy", "aud", "cad", "nzd"].some((c) =>
+              asset?.includes(c),
+            )
+          );
+        if (selectedMarket === "stocks")
+          return ["aapl", "nvda", "tsla", "msft", "amzn", "googl"].some((c) =>
+            asset?.includes(c),
+          );
         return true;
       });
     }
 
     // Signal type filter
-    if (signalType !== 'all') {
-      filtered = filtered.filter(s => s.signal_type === signalType);
+    if (signalType !== "all") {
+      filtered = filtered.filter((s) => s.signal_type === signalType);
     }
 
     // Price range filter
-    filtered = filtered.filter(s => {
+    filtered = filtered.filter((s) => {
       const price = s.is_free ? 0 : s.price;
       return price >= priceRange.min && price <= priceRange.max;
     });
@@ -80,26 +99,35 @@ export default function MarketplacePage() {
     // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(s =>
-        s.asset?.toLowerCase().includes(query) ||
-        s.title?.toLowerCase().includes(query) ||
-        s.profiles?.full_name?.toLowerCase().includes(query)
+      filtered = filtered.filter(
+        (s) =>
+          s.asset?.toLowerCase().includes(query) ||
+          s.title?.toLowerCase().includes(query) ||
+          s.profiles?.full_name?.toLowerCase().includes(query),
       );
     }
 
     // Sort
     switch (sortBy) {
-      case 'price_low':
-        filtered.sort((a, b) => (a.is_free ? 0 : a.price) - (b.is_free ? 0 : b.price));
+      case "price_low":
+        filtered.sort(
+          (a, b) => (a.is_free ? 0 : a.price) - (b.is_free ? 0 : b.price),
+        );
         break;
-      case 'price_high':
-        filtered.sort((a, b) => (b.is_free ? 0 : b.price) - (a.is_free ? 0 : a.price));
+      case "price_high":
+        filtered.sort(
+          (a, b) => (b.is_free ? 0 : b.price) - (a.is_free ? 0 : a.price),
+        );
         break;
-      case 'oldest':
-        filtered.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+      case "oldest":
+        filtered.sort(
+          (a, b) => new Date(a.created_at) - new Date(b.created_at),
+        );
         break;
       default:
-        filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        filtered.sort(
+          (a, b) => new Date(b.created_at) - new Date(a.created_at),
+        );
     }
 
     setFilteredSignals(filtered);
@@ -117,59 +145,57 @@ export default function MarketplacePage() {
   };
 
   const resetFilters = () => {
-    setSelectedMarket('all');
-    setSortBy('latest');
-    setSearchQuery('');
+    setSelectedMarket("all");
+    setSortBy("latest");
+    setSearchQuery("");
     setPriceRange({ min: 0, max: 50 });
-    setSignalType('all');
+    setSignalType("all");
   };
 
   const handleBuyClick = (signal) => {
     if (!user) {
-      alert('Please sign in to purchase signals');
+      alert("Please sign in to purchase signals");
       return;
     }
-    setBuyError('');
+    setBuyError("");
     setSelectedSignal(signal);
     setShowBuyModal(true);
   };
 
   const handleConfirmPurchase = async () => {
     setBuying(true);
-    setBuyError('');
+    setBuyError("");
     try {
       // Check wallet balance
       const { data: wallet } = await supabase
-        .from('wallets')
-        .select('balance')
-        .eq('user_id', user.id)
+        .from("wallets")
+        .select("balance")
+        .eq("user_id", user.id)
         .single();
 
       const price = selectedSignal.is_free ? 0 : selectedSignal.price;
 
       if (!selectedSignal.is_free && wallet.balance < price) {
-        setBuyError('Insufficient balance. Please top up your wallet.');
+        setBuyError("Insufficient balance. Please top up your wallet.");
         setBuying(false);
         return;
       }
 
       // Create subscription
-      const { error: subError } = await supabase
-        .from('subscriptions')
-        .insert({
-          customer_id: user.id,
-          provider_id: selectedSignal.provider_id,
-          amount: price,
-          status: 'active',
-        });
+      const { error: subError } = await supabase.from("subscriptions").insert({
+        customer_id: user.id,
+        provider_id: selectedSignal.provider_id,
+        amount: price,
+        status: "active",
+      });
       if (subError) throw subError;
 
       // Create transaction record
-      await supabase.from('transactions').insert({
+      await supabase.from("transactions").insert({
         user_id: user.id,
-        type: 'subscription',
+        type: "subscription",
         amount: price,
-        status: 'success',
+        status: "success",
         description: `Purchased signal: ${selectedSignal.title || selectedSignal.asset}`,
         reference: `SIG-${Date.now()}`,
       });
@@ -177,51 +203,55 @@ export default function MarketplacePage() {
       // Deduct from wallet if not free
       if (!selectedSignal.is_free) {
         await supabase
-          .from('wallets')
+          .from("wallets")
           .update({ balance: wallet.balance - price })
-          .eq('user_id', user.id);
+          .eq("user_id", user.id);
 
         // Add to provider wallet (90% after 10% platform fee)
         const providerEarning = price * 0.9;
         const { data: providerWallet } = await supabase
-          .from('wallets')
-          .select('balance, total_earned')
-          .eq('user_id', selectedSignal.provider_id)
+          .from("wallets")
+          .select("balance, total_earned")
+          .eq("user_id", selectedSignal.provider_id)
           .single();
 
         await supabase
-          .from('wallets')
+          .from("wallets")
           .update({
             balance: (providerWallet?.balance || 0) + providerEarning,
             total_earned: (providerWallet?.total_earned || 0) + providerEarning,
           })
-          .eq('user_id', selectedSignal.provider_id);
+          .eq("user_id", selectedSignal.provider_id);
       }
 
       // Send notification to user
-      await supabase.from('notifications').insert({
+      await supabase.from("notifications").insert({
         user_id: user.id,
-        title: 'Signal Purchased!',
+        title: "Signal Purchased!",
         message: `You have successfully purchased the ${selectedSignal.asset} signal.`,
-        type: 'success',
+        type: "success",
       });
 
       setShowBuyModal(false);
       setSelectedSignal(null);
-      alert('Signal purchased successfully! Full analysis is now available.');
+      setPurchasedSignal(selectedSignal);
+      setShowSuccessModal(true);
+      setShowBuyModal(false);
       fetchSignals();
     } catch (err) {
-      setBuyError(err.message || 'Purchase failed. Please try again.');
+      setBuyError(err.message || "Purchase failed. Please try again.");
     } finally {
       setBuying(false);
     }
   };
 
-  const text = darkMode ? 'text-white' : 'text-gray-800';
-  const subtext = darkMode ? 'text-gray-400' : 'text-gray-500';
-  const filterCard = `rounded-xl p-4 ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`;
+  const text = darkMode ? "text-white" : "text-gray-800";
+  const subtext = darkMode ? "text-gray-400" : "text-gray-500";
+  const filterCard = `rounded-xl p-4 ${darkMode ? "bg-gray-800" : "bg-white shadow-lg"}`;
   const selectClass = `w-full px-3 py-2 text-sm rounded-lg border focus:outline-none focus:border-orange-500 ${
-    darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-800'
+    darkMode
+      ? "bg-gray-700 border-gray-600 text-white"
+      : "bg-white border-gray-300 text-gray-800"
   }`;
 
   if (loading) {
@@ -240,7 +270,9 @@ export default function MarketplacePage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
-          <h1 className={`text-xl sm:text-2xl font-bold flex items-center gap-2 ${text}`}>
+          <h1
+            className={`text-xl sm:text-2xl font-bold flex items-center gap-2 ${text}`}
+          >
             <Icon icon={Icons.Store} size={20} />
             Signal Marketplace
           </h1>
@@ -258,16 +290,24 @@ export default function MarketplacePage() {
       </div>
 
       {/* Search Bar */}
-      <div className={`rounded-xl p-3 sm:p-4 ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`}>
+      <div
+        className={`rounded-xl p-3 sm:p-4 ${darkMode ? "bg-gray-800" : "bg-white shadow-lg"}`}
+      >
         <div className="relative">
-          <Icon icon={Icons.Search} size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Icon
+            icon={Icons.Search}
+            size={16}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+          />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by asset, title, or provider..."
             className={`w-full pl-9 pr-3 py-2 text-sm rounded-lg border focus:outline-none focus:border-orange-500 ${
-              darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-800'
+              darkMode
+                ? "bg-gray-700 border-gray-600 text-white"
+                : "bg-white border-gray-300 text-gray-800"
             }`}
           />
         </div>
@@ -275,8 +315,9 @@ export default function MarketplacePage() {
 
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Filters Sidebar */}
-        <div className={`${showMobileFilters ? 'block' : 'hidden'} lg:block lg:w-72 flex-shrink-0 space-y-4`}>
-
+        <div
+          className={`${showMobileFilters ? "block" : "hidden"} lg:block lg:w-72 flex-shrink-0 space-y-4`}
+        >
           {/* Mobile close */}
           <div className="flex justify-between items-center lg:hidden">
             <h3 className={`font-semibold ${text}`}>Filters</h3>
@@ -287,11 +328,17 @@ export default function MarketplacePage() {
 
           {/* Market Filter */}
           <div className={filterCard}>
-            <label className={`block text-sm mb-2 flex items-center gap-1 ${subtext}`}>
+            <label
+              className={`block text-sm mb-2 flex items-center gap-1 ${subtext}`}
+            >
               <Icon icon={Icons.Chart} size={14} />
               Market
             </label>
-            <select value={selectedMarket} onChange={(e) => setSelectedMarket(e.target.value)} className={selectClass}>
+            <select
+              value={selectedMarket}
+              onChange={(e) => setSelectedMarket(e.target.value)}
+              className={selectClass}
+            >
               <option value="all">🌍 All Markets</option>
               <option value="forex">💱 Forex</option>
               <option value="crypto">₿ Crypto</option>
@@ -301,11 +348,17 @@ export default function MarketplacePage() {
 
           {/* Signal Type */}
           <div className={filterCard}>
-            <label className={`block text-sm mb-2 flex items-center gap-1 ${subtext}`}>
+            <label
+              className={`block text-sm mb-2 flex items-center gap-1 ${subtext}`}
+            >
               <Icon icon={Icons.ExchangeAlt} size={14} />
               Signal Type
             </label>
-            <select value={signalType} onChange={(e) => setSignalType(e.target.value)} className={selectClass}>
+            <select
+              value={signalType}
+              onChange={(e) => setSignalType(e.target.value)}
+              className={selectClass}
+            >
               <option value="all">All Types</option>
               <option value="buy">📈 Buy</option>
               <option value="sell">📉 Sell</option>
@@ -314,7 +367,9 @@ export default function MarketplacePage() {
 
           {/* Price Range */}
           <div className={filterCard}>
-            <label className={`block text-sm mb-3 flex items-center gap-1 ${subtext}`}>
+            <label
+              className={`block text-sm mb-3 flex items-center gap-1 ${subtext}`}
+            >
               <Icon icon={Icons.Dollar} size={14} />
               Price Range: ${priceRange.min} - ${priceRange.max}
             </label>
@@ -323,7 +378,9 @@ export default function MarketplacePage() {
               min="0"
               max="50"
               value={priceRange.max}
-              onChange={(e) => setPriceRange({ ...priceRange, max: parseInt(e.target.value) })}
+              onChange={(e) =>
+                setPriceRange({ ...priceRange, max: parseInt(e.target.value) })
+              }
               className="w-full accent-orange-500"
             />
             <div className={`flex justify-between text-xs mt-1 ${subtext}`}>
@@ -334,11 +391,17 @@ export default function MarketplacePage() {
 
           {/* Sort By */}
           <div className={filterCard}>
-            <label className={`block text-sm mb-2 flex items-center gap-1 ${subtext}`}>
+            <label
+              className={`block text-sm mb-2 flex items-center gap-1 ${subtext}`}
+            >
               <Icon icon={Icons.Sort} size={14} />
               Sort By
             </label>
-            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className={selectClass}>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className={selectClass}
+            >
               <option value="latest">🕐 Latest First</option>
               <option value="oldest">🕐 Oldest First</option>
               <option value="price_low">💰 Price: Low to High</option>
@@ -364,17 +427,24 @@ export default function MarketplacePage() {
           </p>
 
           {displayedSignals.length === 0 ? (
-            <div className={`text-center py-12 rounded-xl ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`}>
+            <div
+              className={`text-center py-12 rounded-xl ${darkMode ? "bg-gray-800" : "bg-white shadow-lg"}`}
+            >
               <p className="text-4xl mb-4">📭</p>
-              <p className={subtext}>No signals found for the selected filters.</p>
-              <button onClick={resetFilters} className="mt-4 text-orange-500 hover:underline text-sm">
+              <p className={subtext}>
+                No signals found for the selected filters.
+              </p>
+              <button
+                onClick={resetFilters}
+                className="mt-4 text-orange-500 hover:underline text-sm"
+              >
                 Clear filters
               </button>
             </div>
           ) : (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {displayedSignals.map(signal => (
+                {displayedSignals.map((signal) => (
                   <SignalCard
                     key={signal.id}
                     signal={signal}
@@ -390,7 +460,9 @@ export default function MarketplacePage() {
                   <button
                     onClick={loadMore}
                     className={`px-6 py-2 rounded-lg text-sm flex items-center gap-2 ${
-                      darkMode ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                      darkMode
+                        ? "bg-gray-700 hover:bg-gray-600 text-gray-300"
+                        : "bg-gray-100 hover:bg-gray-200 text-gray-700"
                     }`}
                   >
                     <Icon icon={Icons.ChevronDown} size={14} />
@@ -406,9 +478,13 @@ export default function MarketplacePage() {
       {/* Buy Modal */}
       {showBuyModal && selectedSignal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className={`max-w-md w-full rounded-xl ${darkMode ? 'bg-gray-800' : 'bg-white'} p-6`}>
+          <div
+            className={`max-w-md w-full rounded-xl ${darkMode ? "bg-gray-800" : "bg-white"} p-6`}
+          >
             <div className="flex justify-between items-center mb-4">
-              <h2 className={`text-xl font-bold flex items-center gap-2 ${text}`}>
+              <h2
+                className={`text-xl font-bold flex items-center gap-2 ${text}`}
+              >
                 <Icon icon={Icons.ShoppingCart} size={18} />
                 Confirm Purchase
               </h2>
@@ -423,34 +499,46 @@ export default function MarketplacePage() {
               </div>
             )}
 
-            <div className={`p-4 rounded-lg mb-4 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+            <div
+              className={`p-4 rounded-lg mb-4 ${darkMode ? "bg-gray-700" : "bg-gray-50"}`}
+            >
               <div className="flex justify-between mb-2 text-sm">
                 <span className={subtext}>Signal:</span>
-                <span className={`font-semibold ${text}`}>{selectedSignal.title || selectedSignal.asset}</span>
+                <span className={`font-semibold ${text}`}>
+                  {selectedSignal.title || selectedSignal.asset}
+                </span>
               </div>
               <div className="flex justify-between mb-2 text-sm">
                 <span className={subtext}>Asset:</span>
-                <span className={`font-semibold ${text}`}>{selectedSignal.asset}</span>
+                <span className={`font-semibold ${text}`}>
+                  {selectedSignal.asset}
+                </span>
               </div>
               <div className="flex justify-between mb-2 text-sm">
                 <span className={subtext}>Type:</span>
-                <span className={`font-semibold capitalize ${selectedSignal.signal_type === 'buy' ? 'text-green-500' : 'text-red-500'}`}>
+                <span
+                  className={`font-semibold capitalize ${selectedSignal.signal_type === "buy" ? "text-green-500" : "text-red-500"}`}
+                >
                   {selectedSignal.signal_type}
                 </span>
               </div>
               <div className="flex justify-between mb-2 text-sm">
                 <span className={subtext}>Provider:</span>
-                <span className={`font-semibold ${text}`}>{selectedSignal.profiles?.full_name}</span>
+                <span className={`font-semibold ${text}`}>
+                  {selectedSignal.profiles?.full_name}
+                </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className={subtext}>Price:</span>
                 <span className="text-orange-500 font-bold">
-                  {selectedSignal.is_free ? 'Free' : `$${selectedSignal.price}`}
+                  {selectedSignal.is_free ? "Free" : `$${selectedSignal.price}`}
                 </span>
               </div>
             </div>
 
-            <div className={`text-xs mb-4 p-3 rounded-lg flex items-center gap-2 ${darkMode ? 'bg-yellow-500/10 text-yellow-400' : 'bg-yellow-50 text-yellow-600'}`}>
+            <div
+              className={`text-xs mb-4 p-3 rounded-lg flex items-center gap-2 ${darkMode ? "bg-yellow-500/10 text-yellow-400" : "bg-yellow-50 text-yellow-600"}`}
+            >
               <Icon icon={Icons.Flash} size={12} />
               Full analysis revealed immediately after purchase.
             </div>
@@ -461,20 +549,173 @@ export default function MarketplacePage() {
                 disabled={buying}
                 className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-lg transition disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
               >
-                {buying ? 'Processing...' : (
+                {buying ? (
+                  "Processing..."
+                ) : (
                   <>
                     <Icon icon={Icons.Check} size={14} />
-                    Confirm — {selectedSignal.is_free ? 'Free' : `$${selectedSignal.price}`}
+                    Confirm —{" "}
+                    {selectedSignal.is_free
+                      ? "Free"
+                      : `$${selectedSignal.price}`}
                   </>
                 )}
               </button>
               <button
                 onClick={() => setShowBuyModal(false)}
                 className={`px-4 py-2 rounded-lg transition text-sm ${
-                  darkMode ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+                  darkMode
+                    ? "bg-gray-700 hover:bg-gray-600 text-gray-300"
+                    : "bg-gray-200 hover:bg-gray-300 text-gray-700"
                 }`}
               >
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showSuccessModal && purchasedSignal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div
+            className={`max-w-lg w-full rounded-2xl ${darkMode ? "bg-gray-800" : "bg-white"} p-6`}
+          >
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                <span className="text-3xl">✅</span>
+              </div>
+              <h2
+                className={`text-xl font-bold ${darkMode ? "text-white" : "text-gray-800"}`}
+              >
+                Purchase Successful!
+              </h2>
+              <p
+                className={`text-sm mt-1 ${darkMode ? "text-gray-400" : "text-gray-500"}`}
+              >
+                You now have full access to this signal
+              </p>
+            </div>
+
+            <div
+              className={`rounded-xl p-4 mb-4 ${darkMode ? "bg-gray-700" : "bg-gray-50"}`}
+            >
+              <div className="flex justify-between items-center mb-3">
+                <div>
+                  <p
+                    className={`font-bold text-lg ${darkMode ? "text-white" : "text-gray-800"}`}
+                  >
+                    {purchasedSignal.asset}
+                  </p>
+                  <p
+                    className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}
+                  >
+                    by {purchasedSignal.profiles?.full_name}
+                  </p>
+                </div>
+                <span
+                  className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                    purchasedSignal.signal_type === "buy"
+                      ? "bg-green-500/20 text-green-500"
+                      : "bg-red-500/20 text-red-500"
+                  }`}
+                >
+                  {purchasedSignal.signal_type?.toUpperCase()}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                <div
+                  className={`rounded-lg p-2 text-center ${darkMode ? "bg-gray-800" : "bg-white"}`}
+                >
+                  <p
+                    className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}
+                  >
+                    Entry
+                  </p>
+                  <p
+                    className={`font-mono font-bold text-sm ${darkMode ? "text-white" : "text-gray-800"}`}
+                  >
+                    {purchasedSignal.entry_price || "—"}
+                  </p>
+                </div>
+                <div
+                  className={`rounded-lg p-2 text-center ${darkMode ? "bg-gray-800" : "bg-white"}`}
+                >
+                  <p
+                    className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}
+                  >
+                    Take Profit
+                  </p>
+                  <p className="font-mono font-bold text-sm text-green-500">
+                    {purchasedSignal.target_price || "—"}
+                  </p>
+                </div>
+                <div
+                  className={`rounded-lg p-2 text-center ${darkMode ? "bg-gray-800" : "bg-white"}`}
+                >
+                  <p
+                    className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}
+                  >
+                    Stop Loss
+                  </p>
+                  <p className="font-mono font-bold text-sm text-red-500">
+                    {purchasedSignal.stop_loss || "—"}
+                  </p>
+                </div>
+              </div>
+
+              {purchasedSignal.timeframe && (
+                <div className="flex items-center gap-2 mb-3">
+                  <span
+                    className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}
+                  >
+                    Timeframe:
+                  </span>
+                  <span className="text-xs bg-orange-500/20 text-orange-500 px-2 py-0.5 rounded-full">
+                    {purchasedSignal.timeframe}
+                  </span>
+                </div>
+              )}
+
+              <div
+                className={`rounded-lg p-3 border ${darkMode ? "bg-gray-800 border-green-500/30" : "bg-green-50 border-green-200"}`}
+              >
+                <p className="text-xs font-semibold text-green-500 mb-2 flex items-center gap-1">
+                  🔓 Full Analysis (Unlocked)
+                </p>
+                <p
+                  className={`text-sm leading-relaxed ${darkMode ? "text-gray-300" : "text-gray-700"}`}
+                >
+                  {purchasedSignal.description ||
+                    "No detailed analysis provided for this signal."}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowSuccessModal(false);
+                  setPurchasedSignal(null);
+                }}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition ${
+                  darkMode
+                    ? "bg-gray-700 hover:bg-gray-600 text-gray-300"
+                    : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                }`}
+              >
+                Close
+              </button>
+              <button
+                onClick={() => {
+                  setShowSuccessModal(false);
+                  setPurchasedSignal(null);
+                  window.location.href = "/dashboard/purchases";
+                }}
+                className="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-2.5 rounded-xl text-sm font-medium transition"
+              >
+                View My Purchases →
               </button>
             </div>
           </div>
@@ -486,25 +727,37 @@ export default function MarketplacePage() {
 
 // Signal Card Component
 function SignalCard({ signal, darkMode, onBuy, user }) {
-  const text = darkMode ? 'text-white' : 'text-gray-800';
-  const subtext = darkMode ? 'text-gray-400' : 'text-gray-500';
+  const text = darkMode ? "text-white" : "text-gray-800";
+  const subtext = darkMode ? "text-gray-400" : "text-gray-500";
 
   const getMarketColor = (asset) => {
     const a = asset?.toLowerCase();
-    if (['btc', 'eth', 'sol', 'bnb', 'doge', 'xrp'].some(c => a?.includes(c))) return 'bg-orange-500/20 text-orange-500';
-    if (['aapl', 'nvda', 'tsla', 'msft', 'amzn', 'googl'].some(c => a?.includes(c))) return 'bg-blue-500/20 text-blue-500';
-    return 'bg-green-500/20 text-green-500';
+    if (["btc", "eth", "sol", "bnb", "doge", "xrp"].some((c) => a?.includes(c)))
+      return "bg-orange-500/20 text-orange-500";
+    if (
+      ["aapl", "nvda", "tsla", "msft", "amzn", "googl"].some((c) =>
+        a?.includes(c),
+      )
+    )
+      return "bg-blue-500/20 text-blue-500";
+    return "bg-green-500/20 text-green-500";
   };
 
   return (
-    <div className={`rounded-xl border transition-all duration-300 overflow-hidden ${
-      darkMode ? 'bg-gray-800 border-gray-700 hover:border-orange-500/50' : 'bg-white shadow-lg border-gray-200 hover:shadow-xl'
-    }`}>
+    <div
+      className={`rounded-xl border transition-all duration-300 overflow-hidden ${
+        darkMode
+          ? "bg-gray-800 border-gray-700 hover:border-orange-500/50"
+          : "bg-white shadow-lg border-gray-200 hover:shadow-xl"
+      }`}
+    >
       <div className="p-4">
         {/* Header */}
         <div className="flex justify-between items-start mb-3">
           <div>
-            <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded ${getMarketColor(signal.asset)}`}>
+            <span
+              className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded ${getMarketColor(signal.asset)}`}
+            >
               <Icon icon={Icons.Chart} size={10} />
               {signal.asset}
             </span>
@@ -514,7 +767,7 @@ function SignalCard({ signal, darkMode, onBuy, user }) {
           </div>
           <div className="text-right">
             <p className="text-xl font-bold text-orange-500">
-              {signal.is_free ? 'Free' : `$${signal.price}`}
+              {signal.is_free ? "Free" : `$${signal.price}`}
             </p>
             <p className={`text-xs ${subtext}`}>per signal</p>
           </div>
@@ -525,29 +778,43 @@ function SignalCard({ signal, darkMode, onBuy, user }) {
           <div className="flex items-center gap-1">
             <Icon icon={Icons.User} size={10} />
             <span className={subtext}>Provider:</span>
-            <span className={`font-medium ${text}`}>{signal.profiles?.full_name || 'Unknown'}</span>
+            <span className={`font-medium ${text}`}>
+              {signal.profiles?.full_name || "Unknown"}
+            </span>
           </div>
-          <span className={`px-2 py-0.5 rounded-full text-xs ${
-            signal.signal_type === 'buy' ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'
-          }`}>
+          <span
+            className={`px-2 py-0.5 rounded-full text-xs ${
+              signal.signal_type === "buy"
+                ? "bg-green-500/20 text-green-500"
+                : "bg-red-500/20 text-red-500"
+            }`}
+          >
             {signal.signal_type?.toUpperCase()}
           </span>
         </div>
 
         {/* Entry, TP, SL */}
-        <div className={`rounded-lg p-2 mb-3 ${darkMode ? 'bg-gray-700/50' : 'bg-gray-50'}`}>
+        <div
+          className={`rounded-lg p-2 mb-3 ${darkMode ? "bg-gray-700/50" : "bg-gray-50"}`}
+        >
           <div className="grid grid-cols-3 gap-1 text-center text-xs">
             <div>
               <p className={subtext}>Entry</p>
-              <p className={`font-mono font-semibold ${text}`}>{signal.entry_price || '—'}</p>
+              <p className={`font-mono font-semibold ${text}`}>
+                {signal.entry_price || "—"}
+              </p>
             </div>
             <div>
               <p className={subtext}>TP</p>
-              <p className="font-mono font-semibold text-green-500">{signal.target_price || '—'}</p>
+              <p className="font-mono font-semibold text-green-500">
+                {signal.target_price || "—"}
+              </p>
             </div>
             <div>
               <p className={subtext}>SL</p>
-              <p className="font-mono font-semibold text-red-500">{signal.stop_loss || '—'}</p>
+              <p className="font-mono font-semibold text-red-500">
+                {signal.stop_loss || "—"}
+              </p>
             </div>
           </div>
         </div>
@@ -560,7 +827,9 @@ function SignalCard({ signal, darkMode, onBuy, user }) {
           </div>
         )}
 
-        <div className={`text-center mb-3 text-xs flex items-center justify-center gap-1 ${subtext}`}>
+        <div
+          className={`text-center mb-3 text-xs flex items-center justify-center gap-1 ${subtext}`}
+        >
           <Icon icon={Icons.Lock} size={10} />
           Full analysis after purchase
         </div>
@@ -570,14 +839,20 @@ function SignalCard({ signal, darkMode, onBuy, user }) {
           className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-lg transition text-sm flex items-center justify-center gap-1"
         >
           <Icon icon={Icons.Dollar} size={12} color="white" />
-          {signal.is_free ? 'Get Free' : `Buy — $${signal.price}`}
+          {signal.is_free ? "Get Free" : `Buy — $${signal.price}`}
         </button>
 
-        <div className={`flex justify-between mt-2 pt-2 border-t text-xs ${
-          darkMode ? 'border-gray-700 text-gray-500' : 'border-gray-100 text-gray-400'
-        }`}>
+        <div
+          className={`flex justify-between mt-2 pt-2 border-t text-xs ${
+            darkMode
+              ? "border-gray-700 text-gray-500"
+              : "border-gray-100 text-gray-400"
+          }`}
+        >
           <span>{new Date(signal.created_at).toLocaleDateString()}</span>
-          <span className={`capitalize ${signal.status === 'active' ? 'text-green-500' : 'text-gray-400'}`}>
+          <span
+            className={`capitalize ${signal.status === "active" ? "text-green-500" : "text-gray-400"}`}
+          >
             {signal.status}
           </span>
         </div>

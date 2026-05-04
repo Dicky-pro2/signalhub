@@ -12,6 +12,8 @@ export default function ProviderSignals() {
   const [signals, setSignals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [purchaseCount, setPurchaseCount] = useState(0);
+  const [totalRevenue, setTotalRevenue] = useState(0);
 
   useEffect(() => {
     if (!user) return;
@@ -20,18 +22,31 @@ export default function ProviderSignals() {
 
   const fetchSignals = async () => {
     setLoading(true);
+    setError('');
     try {
-      const { data, error } = await supabase
+      // Fetch signals
+      const { data: signalData, error: signalError } = await supabase
         .from('signals')
-        .select(`
-          *,
-          subscriptions(count)
-        `)
+        .select('*')
         .eq('provider_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setSignals(data || []);
+      if (signalError) throw signalError;
+
+      // Fetch subscriptions count for this provider
+      const { data: subs, error: subsError } = await supabase
+        .from('subscriptions')
+        .select('id, amount')
+        .eq('provider_id', user.id);
+
+      if (subsError) throw subsError;
+
+      const count = subs?.length || 0;
+      const revenue = subs?.reduce((sum, s) => sum + (s.amount * 0.9), 0) || 0;
+
+      setPurchaseCount(count);
+      setTotalRevenue(revenue);
+      setSignals(signalData || []);
     } catch (err) {
       setError(err.message || 'Failed to fetch signals');
     } finally {
@@ -73,15 +88,6 @@ export default function ProviderSignals() {
     }
   };
 
-  const totalRevenue = signals.reduce((sum, s) => {
-    const purchases = s.subscriptions?.[0]?.count || 0;
-    return sum + (purchases * (s.is_free ? 0 : s.price) * 0.9);
-  }, 0);
-
-  const totalPurchases = signals.reduce((sum, s) => {
-    return sum + (s.subscriptions?.[0]?.count || 0);
-  }, 0);
-
   const text = darkMode ? 'text-white' : 'text-gray-800';
   const subtext = darkMode ? 'text-gray-400' : 'text-gray-500';
   const card = `rounded-xl p-4 ${darkMode ? 'bg-gray-800' : 'bg-white shadow-lg'}`;
@@ -122,7 +128,7 @@ export default function ProviderSignals() {
         </div>
         <div className={card}>
           <p className={`text-sm ${subtext}`}>Total Purchases</p>
-          <p className={`text-2xl font-bold ${text}`}>{totalPurchases}</p>
+          <p className={`text-2xl font-bold ${text}`}>{purchaseCount}</p>
         </div>
         <div className={card}>
           <p className={`text-sm ${subtext}`}>Total Revenue</p>
@@ -158,78 +164,67 @@ export default function ProviderSignals() {
                   <th className="text-left px-4 py-3">Type</th>
                   <th className="text-left px-4 py-3">Price</th>
                   <th className="text-left px-4 py-3">Timeframe</th>
-                  <th className="text-left px-4 py-3">Purchases</th>
-                  <th className="text-left px-4 py-3">Revenue</th>
                   <th className="text-left px-4 py-3">Status</th>
                   <th className="text-left px-4 py-3">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {signals.map((signal) => {
-                  const purchases = signal.subscriptions?.[0]?.count || 0;
-                  const revenue = purchases * (signal.is_free ? 0 : signal.price) * 0.9;
-
-                  return (
-                    <tr
-                      key={signal.id}
-                      className={`border-b ${darkMode ? 'border-gray-700/50' : 'border-gray-100'}`}
-                    >
-                      <td className={`px-4 py-3 font-medium ${text}`}>
-                        {signal.asset}
-                        {signal.title && (
-                          <p className={`text-xs ${subtext}`}>{signal.title}</p>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className={`text-xs px-2 py-1 rounded ${
-                          signal.signal_type === 'buy'
-                            ? 'bg-green-500/20 text-green-500'
-                            : 'bg-red-500/20 text-red-500'
-                        }`}>
-                          {signal.signal_type?.toUpperCase()}
-                        </span>
-                      </td>
-                      <td className={`px-4 py-3 ${subtext}`}>
-                        {signal.is_free ? 'Free' : `$${signal.price}`}
-                      </td>
-                      <td className={`px-4 py-3 ${subtext}`}>
-                        {signal.timeframe || '—'}
-                      </td>
-                      <td className={`px-4 py-3 ${subtext}`}>{purchases}</td>
-                      <td className="px-4 py-3 text-green-500">
-                        ${revenue.toFixed(2)}
-                      </td>
-                      <td className="px-4 py-3">
-                        <button
-                          onClick={() => handleToggleStatus(signal.id, signal.status)}
-                          className={`px-2 py-1 rounded text-xs transition ${
-                            signal.status === 'active'
-                              ? 'bg-green-500/20 text-green-500 hover:bg-green-500/30'
-                              : 'bg-gray-500/20 text-gray-400 hover:bg-gray-500/30'
-                          }`}
+                {signals.map((signal) => (
+                  <tr
+                    key={signal.id}
+                    className={`border-b ${darkMode ? 'border-gray-700/50' : 'border-gray-100'}`}
+                  >
+                    <td className={`px-4 py-3 font-medium ${text}`}>
+                      {signal.asset}
+                      {signal.title && (
+                        <p className={`text-xs ${subtext}`}>{signal.title}</p>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`text-xs px-2 py-1 rounded ${
+                        signal.signal_type === 'buy'
+                          ? 'bg-green-500/20 text-green-500'
+                          : 'bg-red-500/20 text-red-500'
+                      }`}>
+                        {signal.signal_type?.toUpperCase()}
+                      </span>
+                    </td>
+                    <td className={`px-4 py-3 ${subtext}`}>
+                      {signal.is_free ? 'Free' : `$${signal.price}`}
+                    </td>
+                    <td className={`px-4 py-3 ${subtext}`}>
+                      {signal.timeframe || '—'}
+                    </td>
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() => handleToggleStatus(signal.id, signal.status)}
+                        className={`px-2 py-1 rounded text-xs transition ${
+                          signal.status === 'active'
+                            ? 'bg-green-500/20 text-green-500 hover:bg-green-500/30'
+                            : 'bg-gray-500/20 text-gray-400 hover:bg-gray-500/30'
+                        }`}
+                      >
+                        {signal.status}
+                      </button>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex gap-3">
+                        <Link
+                          to={`/provider/edit-signal/${signal.id}`}
+                          className="text-blue-500 hover:text-blue-400 text-sm"
                         >
-                          {signal.status}
+                          Edit
+                        </Link>
+                        <button
+                          onClick={() => handleDelete(signal.id)}
+                          className="text-red-500 hover:text-red-400 text-sm"
+                        >
+                          Delete
                         </button>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex gap-3">
-                          <Link
-                            to={`/provider/edit-signal/${signal.id}`}
-                            className="text-blue-500 hover:text-blue-400 text-sm"
-                          >
-                            Edit
-                          </Link>
-                          <button
-                            onClick={() => handleDelete(signal.id)}
-                            className="text-red-500 hover:text-red-400 text-sm"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
