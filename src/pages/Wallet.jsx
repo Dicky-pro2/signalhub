@@ -45,99 +45,83 @@ export default function Wallet() {
       setLoading(false);
     }
   };
-
+// Handle Paystack deposit flow
   const handlePaystackDeposit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setSuccess('');
+  e.preventDefault();
+  setError('');
+  setSuccess('');
 
-    const amount = parseFloat(depositAmount);
-    if (amount < 10) {
-      setError('Minimum deposit is $10');
-      return;
-    }
+  const amount = parseFloat(depositAmount);
+  if (amount < 10) {
+    setError('Minimum deposit is $10');
+    return;
+  }
 
-    setDepositing(true);
+  setDepositing(true);
 
-    // Initialize Paystack payment
-    const handler = window.PaystackPop?.setup({
-      key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY,
-      email: user.email,
-      amount: amount * 100, // Paystack uses kobo/cents
-      currency: 'NGN',
-      ref: `DEP-${Date.now()}-${user.id.slice(0, 8)}`,
-      onClose: () => {
-        setDepositing(false);
-      },
-      callback: async (response) => {
-        try {
-          // Payment successful — update wallet
-          const newBalance = (wallet?.balance || 0) + amount;
+  const handler = window.PaystackPop?.setup({
+    key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY,
+    email: user.email,
+    amount: amount * 100,
+    currency: 'NGN',
+    ref: `DEP-${Date.now()}-${user.id.slice(0, 8)}`,
+    onClose: () => {
+      setDepositing(false);
+    },
 
-          await supabase
-            .from('wallets')
-            .update({ balance: newBalance })
-            .eq('user_id', user.id);
-
-          // Record transaction
-          await supabase.from('transactions').insert({
-            user_id: user.id,
-            type: 'deposit',
-            amount,
-            status: 'success',
-            reference: response.reference,
-            description: 'Wallet deposit via Paystack',
-          });
-
-          // Send notification
-          await supabase.from('notifications').insert({
-            user_id: user.id,
-            title: 'Deposit Successful',
-            message: `$${amount.toFixed(2)} has been added to your wallet.`,
-            type: 'success',
-          });
-
-          setSuccess(`$${amount.toFixed(2)} added to your wallet!`);
-          setDepositAmount('');
-          fetchWalletData();
-        } catch (err) {
-          setError('Payment received but wallet update failed. Contact support.');
-        } finally {
-          setDepositing(false);
-        }
-      },
-    });
-
-    if (handler) {
-      handler.openIframe();
-    } else {
-      // Paystack not loaded — fallback for dev/testing
+    // ✅ THIS IS WHERE THE CALLBACK GOES
+    callback: async (response) => {
       try {
-        const newBalance = (wallet?.balance || 0) + amount;
-        await supabase
-          .from('wallets')
-          .update({ balance: newBalance })
-          .eq('user_id', user.id);
-
-        await supabase.from('transactions').insert({
-          user_id: user.id,
-          type: 'deposit',
-          amount,
-          status: 'success',
-          reference: `DEV-${Date.now()}`,
-          description: 'Wallet deposit (dev mode)',
+        // Call edge function to verify payment server-side
+        const { data, error } = await supabase.functions.invoke('verify-payment', {
+          body: {
+            reference: response.reference,
+            userId: user.id,
+            amount,
+          },
         });
 
-        setSuccess(`$${amount.toFixed(2)} added (dev mode — Paystack not loaded)`);
+        if (error || !data.success) {
+          setError('Payment verification failed. Contact support.');
+          return;
+        }
+
+        setSuccess(`$${amount.toFixed(2)} added to your wallet!`);
         setDepositAmount('');
         fetchWalletData();
       } catch (err) {
-        setError('Failed to process deposit');
+        setError('Payment received but verification failed. Contact support.');
       } finally {
         setDepositing(false);
       }
+    },
+  });
+
+  if (handler) {
+    handler.openIframe();
+  } else {
+    // Dev mode fallback when Paystack script not loaded
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-payment', {
+        body: {
+          reference: `DEV-${Date.now()}`,
+          userId: user.id,
+          amount,
+          devMode: true,
+        },
+      });
+
+      if (error) throw error;
+      setSuccess(`$${amount.toFixed(2)} added (dev mode)`);
+      setDepositAmount('');
+      fetchWalletData();
+    } catch (err) {
+      setError('Failed to process deposit');
+    } finally {
+      setDepositing(false);
     }
-  };
+  }
+};
 
   const text = darkMode ? 'text-white' : 'text-gray-800';
   const subtext = darkMode ? 'text-gray-400' : 'text-gray-500';
