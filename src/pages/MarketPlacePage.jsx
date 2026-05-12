@@ -4,6 +4,7 @@ import { useTheme } from "../context/ThemeContext";
 import { supabase } from "../config/supabase";
 import Icon from "../components/Icon";
 import { Icons } from "../components/Icons";
+import { useNavigate } from "react-router-dom";
 
 export default function MarketplacePage() {
   const { user } = useAuth();
@@ -27,6 +28,7 @@ export default function MarketplacePage() {
   const ITEMS_PER_PAGE = 9;
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [purchasedSignal, setPurchasedSignal] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchSignals();
@@ -155,6 +157,7 @@ export default function MarketplacePage() {
   const handleBuyClick = (signal) => {
     if (!user) {
       alert("Please sign in to purchase signals");
+      navigate("/login");
       return;
     }
     setBuyError("");
@@ -166,32 +169,49 @@ export default function MarketplacePage() {
     setBuying(true);
     setBuyError("");
     try {
+      const price = selectedSignal.is_free ? 0 : selectedSignal.price;
+
       // Check wallet balance
-      const { data: wallet } = await supabase
+      const { data: wallet, error: walletError } = await supabase
         .from("wallets")
         .select("balance")
         .eq("user_id", user.id)
         .single();
 
-      const price = selectedSignal.is_free ? 0 : selectedSignal.price;
+      if (walletError) throw walletError;
 
-      if (!selectedSignal.is_free && wallet.balance < price) {
+      if (!selectedSignal.is_free && (!wallet || wallet.balance < price)) {
         setBuyError("Insufficient balance. Please top up your wallet.");
         setBuying(false);
         return;
       }
 
-      // Create subscription
+      // Check if already purchased
+      const { data: existing } = await supabase
+        .from("subscriptions")
+        .select("id")
+        .eq("customer_id", user.id)
+        .eq("signal_id", selectedSignal.id)
+        .single();
+
+      if (existing) {
+        setBuyError("You have already purchased this signal.");
+        setBuying(false);
+        return;
+      }
+
+      // Create subscription — signal_id now included ✅
       const { error: subError } = await supabase.from("subscriptions").insert({
         customer_id: user.id,
         provider_id: selectedSignal.provider_id,
+        signal_id: selectedSignal.id, // ✅ this was missing
         amount: price,
         status: "active",
       });
       if (subError) throw subError;
 
       // Create transaction record
-      await supabase.from("transactions").insert({
+      const { error: txError } = await supabase.from("transactions").insert({
         user_id: user.id,
         type: "subscription",
         amount: price,
@@ -199,13 +219,15 @@ export default function MarketplacePage() {
         description: `Purchased signal: ${selectedSignal.title || selectedSignal.asset}`,
         reference: `SIG-${Date.now()}`,
       });
+      if (txError) throw txError;
 
       // Deduct from wallet if not free
       if (!selectedSignal.is_free) {
-        await supabase
+        const { error: deductError } = await supabase
           .from("wallets")
           .update({ balance: wallet.balance - price })
           .eq("user_id", user.id);
+        if (deductError) throw deductError;
 
         // Add to provider wallet (90% after 10% platform fee)
         const providerEarning = price * 0.9;
@@ -224,7 +246,7 @@ export default function MarketplacePage() {
           .eq("user_id", selectedSignal.provider_id);
       }
 
-      // Send notification to user
+      // Send notification
       await supabase.from("notifications").insert({
         user_id: user.id,
         title: "Signal Purchased!",
@@ -233,12 +255,12 @@ export default function MarketplacePage() {
       });
 
       setShowBuyModal(false);
-      setSelectedSignal(null);
       setPurchasedSignal(selectedSignal);
+      setSelectedSignal(null);
       setShowSuccessModal(true);
-      setShowBuyModal(false);
       fetchSignals();
     } catch (err) {
+      console.error("Purchase error:", err);
       setBuyError(err.message || "Purchase failed. Please try again.");
     } finally {
       setBuying(false);
@@ -711,7 +733,7 @@ export default function MarketplacePage() {
                 onClick={() => {
                   setShowSuccessModal(false);
                   setPurchasedSignal(null);
-                  window.location.href = "/dashboard/purchases";
+                  navigate("/dashboard/purchases");
                 }}
                 className="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-2.5 rounded-xl text-sm font-medium transition"
               >

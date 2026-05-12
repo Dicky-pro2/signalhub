@@ -19,9 +19,13 @@ export default function UserDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
-    fetchDashboardData();
-  }, [user]);
+  if (!user) return;
+  fetchDashboardData();
+
+  // Refetch whenever user navigates back to dashboard
+  window.addEventListener('focus', fetchDashboardData);
+  return () => window.removeEventListener('focus', fetchDashboardData);
+}, [user]);
 
   const fetchDashboardData = async () => {
     setLoading(true);
